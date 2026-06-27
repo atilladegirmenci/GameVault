@@ -16,14 +16,14 @@ namespace GameDBWebApi.Repositories
             _context.Users.Add(user);
         }
 
-        public Task DeleteAsync(User user)
+        public async Task DeleteAsync(User user)
         {
-            throw new NotImplementedException();
+            _context.Users.Remove(user);
         }
 
         public Task<User?> GetByIdAsync(int id)
         {
-            throw new NotImplementedException();
+            return _context.Users.FirstOrDefaultAsync(u => u.Id == id);
         }
 
         public async Task<User?> GetByUserNameAsync(string username)
@@ -37,8 +37,7 @@ namespace GameDBWebApi.Repositories
         }
         public async Task<bool> EmailExistsAsync(string email)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.UserEmail == email);
-            return user != null;
+            return null != await _context.Users.FirstOrDefaultAsync(u => u.UserEmail == email);
         }
     }
 }

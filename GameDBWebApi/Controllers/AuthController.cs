@@ -42,5 +42,34 @@ namespace GameDBWebApi.Controllers
                 return BadRequest(new { message = ex.Message }); //400
             }
         }
-    }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete([FromRoute] int id)
+        {
+            try
+            {
+                await _authService.DeleteAsync(id);
+                return Ok(new { message = "User deleted successfully" });
+
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message }); //400
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateRequestDto request)
+        {
+            try
+            {
+                await _authService.UpdateAsync(id, request);
+                return Ok(new { message = "User updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message }); //400
+            }
+        }
+}
 }
