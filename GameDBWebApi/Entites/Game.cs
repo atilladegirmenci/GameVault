@@ -10,6 +10,7 @@ namespace GameDBWebApi.Entites
         public string Title { get; set; }
         public string ImageUrl { get; set; }
         public DateTime? ReleaseDate { get; set; }
+        public short Score { get; set; }
 
         //NAV PROPERTIES
 

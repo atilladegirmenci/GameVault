@@ -31,9 +31,9 @@ namespace GameDBWebApi.Repositories
             return await _context.Users.FirstOrDefaultAsync(u => u.UserName == username);
         }
 
-        public Task UpdateAsync(User user)
+        public async Task UpdateAsync(User user)
         {
-            throw new NotImplementedException();
+            _context.Users.Update(user);
         }
         public async Task<bool> EmailExistsAsync(string email)
         {

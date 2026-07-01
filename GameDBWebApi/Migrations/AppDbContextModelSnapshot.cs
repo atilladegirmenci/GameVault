@@ -40,6 +40,9 @@ namespace GameDBWebApi.Migrations
                     b.Property<DateTime?>("ReleaseDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<short>("Score")
+                        .HasColumnType("smallint");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(250)

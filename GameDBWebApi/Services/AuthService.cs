@@ -13,30 +13,28 @@ namespace GameDBWebApi.Services
 {
     public class AuthService : IAuthService
     {
-        //private readonly IUserRepository _userRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IConfiguration _configuration;
-        public AuthService(IUnitOfWork unitOfWork, IConfiguration configuration)
+        private readonly ILogger<AuthService> _logger;
+        public AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, ILogger<AuthService> logger)
         {
             _unitOfWork = unitOfWork;
             _configuration = configuration;
+            _logger = logger;
         }
         public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
         {
+            _logger.LogInformation("Attempting login for user: {Username}", request.Username);
             var user = await _unitOfWork.Users.GetByUserNameAsync(request.Username);
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.HashPassword))
             {
-                throw new UnauthorizedAccessException("Invalid username or password.");
-            }
-
-            bool isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.HashPassword);
-            if(!isPasswordValid)
-            {
+                _logger.LogWarning("Invalid credentials for user: {Username}", request.Username);
                 throw new UnauthorizedAccessException("Invalid username or password.");
             }
 
             string token = GenerateJwtToken(user);
+            _logger.LogInformation("User {Username} logged in successfully. Token generated.", request.Username);
             return new LoginResponseDto
             {
                 Token = token,
@@ -46,38 +44,48 @@ namespace GameDBWebApi.Services
 
         public async Task RegisterAsync(RegisterRequestDto request)
         {
-            if(await _unitOfWork.Users.EmailExistsAsync(request.Email))
+            _logger.LogInformation("Attempting to register user: {Username}, {Email}", request.Username, request.Email);
+            if (await _unitOfWork.Users.EmailExistsAsync(request.Email))
             {
                 throw new Exception("Email already exists.");
             }
 
             
-            var newUser = new Entites.User
+            var newUser = new User
             {
                 UserName = request.Username,
                 HashPassword = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 UserEmail = request.Email
 
             };
+
             await _unitOfWork.Users.AddAsync(newUser);
             await _unitOfWork.CompleteAsync(); 
-            
+
+            _logger.LogInformation("User {Username} registered successfully.", request.Username);
+
         }
         public async Task DeleteAsync(int id)
         {
             var user = await _unitOfWork.Users.GetByIdAsync(id);
+            
             if (user == null)
             {
+                _logger.LogWarning("delete operation for user with ID {UserId} failed. User was not found.", id);
                 throw new Exception("User not found.");
             }
+
             await _unitOfWork.Users.DeleteAsync(user);
             await _unitOfWork.CompleteAsync();
+
+            _logger.LogInformation("User with ID {UserId} deleted successfully.", id);
         }
         public async Task UpdateAsync(int id, UpdateRequestDto request)
         {
             var existingUser = await _unitOfWork.Users.GetByIdAsync(id);
             if(existingUser == null)
             {
+                _logger.LogWarning("Update operation for user with ID {UserId} failed. User was not found.", id);
                 throw new Exception("User not found.");
             }
 
@@ -86,15 +94,26 @@ namespace GameDBWebApi.Services
                 bool emailExists = await _unitOfWork.Users.EmailExistsAsync(request.Email);
                 if(emailExists)
                 {
+                    _logger.LogWarning("Update operation for user with ID {UserId} failed. Email {Email} already exists.", id, request.Email);
                     throw new Exception("Email already exists.");
                 }
             }
+
 
             existingUser.UserName = request.Username;
             existingUser.UserEmail = request.Email;
 
             await _unitOfWork.Users.UpdateAsync(existingUser);
             await _unitOfWork.CompleteAsync();
+
+            _logger.LogInformation("User with ID {UserId} updated successfully.", id);
+        }
+        public async Task LogoutAsync()
+        {
+            // In a stateless JWT authentication system, logout is typically handled on the client side by deleting the token.
+            // However, if you want to implement server-side logout, you can maintain a blacklist of tokens or use a token revocation strategy.
+            // For this example, we'll just simulate a logout operation.
+           
         }
 
         private string GenerateJwtToken(User user)

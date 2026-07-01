@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="GameDBWebApi.Tests/GameDBWebApi.Tests.csproj" />
   <Project Path="GameDBWebApi/GameDBWebApi.csproj" />
 </Solution>

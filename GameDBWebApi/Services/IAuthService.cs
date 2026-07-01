@@ -11,5 +11,6 @@ namespace GameDBWebApi.Services
 
         Task DeleteAsync(int id);
         Task UpdateAsync(int id, UpdateRequestDto request);
+        Task LogoutAsync();
     }
 }
