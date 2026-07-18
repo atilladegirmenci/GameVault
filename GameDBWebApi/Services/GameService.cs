@@ -3,6 +3,7 @@ using GameDBWebApi.Repositories;
 using System.Security.AccessControl;
 using GameDBWebApi.Entites;
 using System.Text.Json.Serialization;
+using GameDBWebApi.DTOs;
 
 namespace GameDBWebApi.Services
 {
@@ -29,7 +30,7 @@ namespace GameDBWebApi.Services
             {
                 _logger.LogInformation("Game with RawgId {RawgId} not found in local database. Fetching from RAWG API and saving to db", request.RawgId);
 
-                var rawGameData = await _rawgApiService.GetGameDetailsByRawgIdAsync(request.RawgId);
+                var rawGameData = await _rawgApiService.GetGameByRawgIdAsync(request.RawgId);
 
                 if(rawGameData == null)
                 {
@@ -75,8 +76,90 @@ namespace GameDBWebApi.Services
             await _unitOfWork.CompleteAsync();
         }
 
+        public async Task<GameDetailsResponseDto> GetGameDetailsAsync(int? userId, int rawgId)
+        {
+            var gameDetails = await _rawgApiService.GetGameDetailsByRawgIdAsync(rawgId);
+            
+            if(userId == null)
+            {
+                return gameDetails;
+            }
+
+            var gameInDb = await _unitOfWork.Games.GetByRawgIdAsync(rawgId);
+
+            if(gameInDb != null)
+            {
+                var userGame = await _unitOfWork.UserGames.GetByUserIDAndGameIdAsync(userId.Value, gameInDb.Id);
+                
+                if(userGame != null)
+                {
+                    _logger.LogInformation("Game with RawgId {RawgId} is in user {userId}'s library with status {status}.", rawgId, userId, userGame.Status);
+                    gameDetails.IsInMyLibrary = true;
+                    gameDetails.MyStatus = userGame.Status;
+                }
+            }
+
+            return gameDetails;
+        }
+        public async Task<PaginatedList<GameCardDto>> GetUserGamesAsync(int userId, int page, int pageSize)
+        {
+            var userGames = await _unitOfWork.UserGames.GetByUserIdAsync(userId, page, pageSize);
+
+            if (userGames == null || !userGames.Any())
+            {
+                _logger.LogInformation("No games found for user {userId}.", userId);
+                return new PaginatedList<GameCardDto>(new List<GameCardDto>(), 0, page, pageSize);
+            }
+            
+            var gameCardDtos = userGames.Select(ug => new GameCardDto
+            {
+                RawgId = ug.Game.RawgId,
+                Title = ug.Game.Title,
+                ImageUrl = ug.Game.ImageUrl,
+                Score = ug.Game.Score,
+                GameId = ug.Game.Id,
+                Status = ug.Status,
+                UpdatedDate = ug.UpdatedDate
+            }).ToList();
+
+            return new PaginatedList<GameCardDto>(gameCardDtos, userGames.TotalCount, page, pageSize);
+        }
+
+        public async Task<PaginatedList<GameCardDto>> GetGameFeedAsync(int? userId,int page , int pageSize, string ordering)
+        {
+            var feed = await _rawgApiService.GetGamesAsync(page, pageSize, ordering);
+            
+            var dtoList = new PaginatedList<GameCardDto>(feed.Games.Select(g => new GameCardDto
+            {
+                RawgId = g.RawgId,
+                Title = g.Title,
+                ImageUrl = g.ImageUrl,
+                Score = g.Score
+            }).ToList(), feed.TotalCount, page, pageSize);
+
+            if (userId.HasValue && dtoList.Any())
+            {
+                var rawgIds = dtoList.Select(x => x.RawgId).ToList();
+
+                var userGameStatuses = await _unitOfWork.UserGames.GetStatusesByRawgIdsAsync(userId.Value, rawgIds);
+
+                //using dictionary o(1) lookup 
+                var statusDict = userGameStatuses.ToDictionary(s => s.Game.RawgId, s => s);
+
+                foreach (var item in dtoList)
+                {
+                    if (statusDict.TryGetValue(item.RawgId, out var status))
+                    {
+                        item.GameId = status.GameId;
+                        item.Status = status.Status;
+                        item.UpdatedDate = status.UpdatedDate;
+                    }
+                }
+            }
+
+            return new PaginatedList<GameCardDto>(dtoList, feed.TotalCount, page, pageSize);
+        }
+
        
     }
-
-  
 }

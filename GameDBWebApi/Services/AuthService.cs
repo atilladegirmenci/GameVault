@@ -22,6 +22,7 @@ namespace GameDBWebApi.Services
             _configuration = configuration;
             _logger = logger;
         }
+        //TODO: user email to login instead of username, and add email validation during registration. maybe email and username both can be used to login, but email should be unique and username should be unique as well.
         public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
         {
             _logger.LogInformation("Attempting login for user: {Username}", request.Username);
@@ -65,49 +66,7 @@ namespace GameDBWebApi.Services
             _logger.LogInformation("User {Username} registered successfully.", request.Username);
 
         }
-        public async Task DeleteAsync(int id)
-        {
-            var user = await _unitOfWork.Users.GetByIdAsync(id);
-            
-            if (user == null)
-            {
-                _logger.LogWarning("delete operation for user with ID {UserId} failed. User was not found.", id);
-                throw new Exception("User not found.");
-            }
-
-            await _unitOfWork.Users.DeleteAsync(user);
-            await _unitOfWork.CompleteAsync();
-
-            _logger.LogInformation("User with ID {UserId} deleted successfully.", id);
-        }
-        public async Task UpdateAsync(int id, UpdateRequestDto request)
-        {
-            var existingUser = await _unitOfWork.Users.GetByIdAsync(id);
-            if(existingUser == null)
-            {
-                _logger.LogWarning("Update operation for user with ID {UserId} failed. User was not found.", id);
-                throw new Exception("User not found.");
-            }
-
-            if(existingUser.UserEmail != request.Email)
-            {
-                bool emailExists = await _unitOfWork.Users.EmailExistsAsync(request.Email);
-                if(emailExists)
-                {
-                    _logger.LogWarning("Update operation for user with ID {UserId} failed. Email {Email} already exists.", id, request.Email);
-                    throw new Exception("Email already exists.");
-                }
-            }
-
-
-            existingUser.UserName = request.Username;
-            existingUser.UserEmail = request.Email;
-
-            await _unitOfWork.Users.UpdateAsync(existingUser);
-            await _unitOfWork.CompleteAsync();
-
-            _logger.LogInformation("User with ID {UserId} updated successfully.", id);
-        }
+      
         public async Task LogoutAsync()
         {
             // In a stateless JWT authentication system, logout is typically handled on the client side by deleting the token.

@@ -5,6 +5,6 @@
         public int TotalCount { get; set; }
         public int CurrentPage { get; set; }
         public int PageSize { get; set; }
-        public List<GameFeedDto> Games { get; set; } = new();
+        public List<GameCardDto> Games { get; set; } = new();
     }
 }
