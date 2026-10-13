@@ -11,77 +11,52 @@ namespace GameDBWebApi.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
+
         public UserController(IUserService userService)
         {
             _userService = userService;
         }
 
         [Authorize]
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById([FromRoute] int id)
+        [HttpGet("profile")]
+        public async Task<IActionResult> GetProfile()
         {
-            try
-            {
-                var user = await _userService.GetUserByIdAsync(id);
-                return Ok(user);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            var currentUserId = GetCurrentUserId();
+
+            var user = await _userService.GetUserByIdAsync(currentUserId);
+            return Ok(user);
         }
 
         [Authorize]
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateRequestDto request)
+        [HttpPut("profile")]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateRequestDto request)
         {
-            try
-            {
-                var currentUserid = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var currentUserId = GetCurrentUserId();
 
-                if (currentUserid != id)
-                {
-                    return StatusCode(StatusCodes.Status403Forbidden,
-                        new
-                        {
-                            message = "You are not authorized to update this user. What are you trying to do?"
-                        }); //403
-                }
-
-                await _userService.UpdateAsync(id, request);
-                return Ok(new { message = "User updated successfully" });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message }); //400
-            }
+            await _userService.UpdateAsync(currentUserId, request);
+            return Ok(new { message = "User updated successfully" });
         }
 
         [Authorize]
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete([FromRoute] int id)
+        [HttpDelete("profile")]
+        public async Task<IActionResult> DeleteAccount()
         {
-            try
+            var currentUserId = GetCurrentUserId();
+
+            await _userService.DeleteAsync(currentUserId);
+            return Ok(new { message = "User deleted successfully" });
+        }
+
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId) || userId <= 0)
             {
-                var currentUserid = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-
-                if (currentUserid != id)
-                {
-                    return StatusCode(StatusCodes.Status403Forbidden,
-                        new
-                        {
-                            message = "You are not authorized to delete this user. What are you trying to do?"
-                        }); //403
-                }
-
-                await _userService.DeleteAsync(id);
-                return Ok(new { message = "User deleted successfully" });
-
+                throw new UnauthorizedAccessException("User not found or not authorized.");
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message }); //400
-            }
+
+            return userId;
         }
 
     }

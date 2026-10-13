@@ -39,5 +39,17 @@ namespace GameDBWebApi.Repositories
         {
             return null != await _context.Users.FirstOrDefaultAsync(u => u.UserEmail == email);
         }
+        public async Task<User?> GetByUserMailAsync(string usermail)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.UserEmail == usermail);
+        }
+        public async Task<User?> GetByRefreshTokenAsync(string refreshToken)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
+        }
+        public async Task<bool> UserNameExistsAsync(string userName)
+        {
+            return await _context.Users.AnyAsync(u => u.UserName == userName);
+        }
     }
 }

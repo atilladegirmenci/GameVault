@@ -8,9 +8,15 @@ namespace GameDBWebApi.Entites
         public string UserEmail { get; set; }
         public string HashPassword { get; set; }
 
+        // TOKEN ROTATION PROPERTIES
+        public string? RefreshToken { get; set; }
+        public DateTime RefreshTokenExpiryTime { get; set; }
+
         //NAV PROPERTIES
 
         public ICollection<UserGame> UserGames { get; set; }
         public ICollection<UserList> UserLists { get; set; }
+
+      
     }
 }

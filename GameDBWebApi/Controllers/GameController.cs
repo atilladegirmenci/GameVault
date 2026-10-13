@@ -1,5 +1,4 @@
 ﻿using GameDBWebApi.DTOs.Game;
-using GameDBWebApi.Entites;
 using GameDBWebApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,46 +23,24 @@ namespace GameDBWebApi.Controllers
         [HttpPost("status")]
         public async Task<IActionResult> UpdateGameStatus([FromBody] UpsertGameStatusDto request)
         {
-            try
-            {
-                var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-                if(currentUserId == 0)
-                {
-                    return Unauthorized(new { message = "User not found or not authorized" });
-                }
+            var currentUserId = GetCurrentUserId();
 
-                await _gameService.UpsertGameStatusAsync(currentUserId, request);
+            await _gameService.UpsertGameStatusAsync(currentUserId, request);
 
-                return Ok(new { message = $"Game status updated successfully to '{request.Status}'" });
-            }
-            catch(Exception ex) 
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            return Ok(new { message = $"Game status updated successfully to '{request.Status}'" });
         }
 
         [Authorize]
         [HttpGet("my-games")]
         public async Task<IActionResult> GetUserGames([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
-            try
-            {
-                var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-               
-                if(currentUserId == 0)
-                {
-                    return Unauthorized(new { message = "User not found or not authorized" });
-                }
+            var currentUserId = GetCurrentUserId();
 
-                if (pageSize > 40) pageSize = 40;
-                if (page < 1) page = 1;
-                var userGames = await _gameService.GetUserGamesAsync(currentUserId, page, pageSize);
-                return Ok(userGames);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            if (pageSize > 40) pageSize = 40;
+            if (page < 1) page = 1;
+
+            var userGames = await _gameService.GetUserGamesAsync(currentUserId, page, pageSize);
+            return Ok(userGames);
         }
 
         [AllowAnonymous]
@@ -73,32 +50,14 @@ namespace GameDBWebApi.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string ordering = "added")
         {
-            int? userId = null;
-            try
-            {
-                if (User?.Identity?.IsAuthenticated == true)
-                {
-                    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-                    if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int parsedId))
-                    {
-                        userId = parsedId;
-                    }
-                }
+            int? userId = GetOptionalUserId();
 
-                //rpevent abusive requests and invalid page numbers
-                if (pageSize > 40) pageSize = 40;  
-                if(page <1) page = 1; 
+            if (pageSize > 40) pageSize = 40;
+            if (page < 1) page = 1;
 
-                var feed = await _gameService.GetGameFeedAsync(userId, page, pageSize, ordering);
+            var feed = await _gameService.GetGameFeedAsync(userId, page, pageSize, ordering);
 
-                return Ok(feed);
-            }
-            catch (Exception ex)
-            {
-                
-                return BadRequest(new { message = ex.Message });
-            }
-
+            return Ok(feed);
         }
 
         [AllowAnonymous]
@@ -108,50 +67,54 @@ namespace GameDBWebApi.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
-            try
+            if (string.IsNullOrWhiteSpace(keyword))
             {
-                if(string.IsNullOrEmpty(keyword))
-                {
-                    return BadRequest(new { message = "Keyword cannot be null or empty" });
-                }
-
-                if (pageSize > 40) pageSize = 40;
-                if (page < 1) page = 1;
-
-                var searchResults = await _rawgApiService.GetGamesAsync(page, pageSize, keyword, "-added");
-
-                return Ok(searchResults);
+                return BadRequest(new { message = "Keyword cannot be null or empty" });
             }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+
+            if (pageSize > 40) pageSize = 40;
+            if (page < 1) page = 1;
+
+            var searchResults = await _rawgApiService.GetGamesAsync(page, pageSize, keyword, "-added");
+
+            return Ok(searchResults);
         }
 
         [AllowAnonymous]
         [HttpGet("{rawgId}")]
         public async Task<IActionResult> GetGameDetails([FromRoute] int rawgId)
         {
-            int? userId = null;
-            try
-            {
-                if (User != null && User.Identity != null && User.Identity.IsAuthenticated)
-                {
-                    var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-                    if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int parsedId))
-                    {
-                        userId = parsedId;
-                    }
-                }
+            int? userId = GetOptionalUserId();
 
-                var game = await _gameService.GetGameDetailsAsync(userId, rawgId);
-               
-                return Ok(game);
-            }
-            catch (Exception ex)
+            var game = await _gameService.GetGameDetailsAsync(userId, rawgId);
+
+            return Ok(game);
+        }
+
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId) || userId <= 0)
             {
-                return BadRequest(new { message = ex.Message });
+                throw new UnauthorizedAccessException("User not found or not authorized.");
             }
+
+            return userId;
+        }
+
+       
+        private int? GetOptionalUserId()
+        {
+            if (User?.Identity?.IsAuthenticated == true)
+            {
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out int parsedId))
+                {
+                    return parsedId;
+                }
+            }
+            return null;
         }
 
     }
