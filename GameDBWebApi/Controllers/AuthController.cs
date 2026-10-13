@@ -1,4 +1,5 @@
 ﻿using GameDBWebApi.DTOs.Auth;
+using GameDBWebApi.Exceptions;
 using GameDBWebApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity.Data;
@@ -24,31 +25,25 @@ namespace GameDBWebApi.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
         {
-            try
-            {
-                LoginResponseDto response = await _authService.LoginAsync(request);
-                return Ok(response);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(new { message = "Invalid username or password." }); //401
-            }
+            var response = await _authService.LoginAsync(request);
+            return Ok(response);
         }
         
         [AllowAnonymous]
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
         {
-            try
-            {
-                await _authService.RegisterAsync(request);
-                return Ok(new { message = "Registration successful" });
+            await _authService.RegisterAsync(request);
+            return Ok(new { message = "Registration successful" });
+        }
 
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message }); //400
-            }
+        [AllowAnonymous]
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto request)
+        {
+
+            var response = await _authService.RefreshTokenAsync(request);
+            return Ok(response);
         }
 
 
@@ -56,16 +51,15 @@ namespace GameDBWebApi.Controllers
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
-            try
-            {
-                await _authService.LogoutAsync();
-                return Ok(new { message = "Logout successful" });
-            }
-            catch(Exception ex)
-            {
-                return BadRequest(new { message = ex.Message }); //400
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized(new { message = "Invalid token claims." });
             }
+
+            await _authService.LogoutAsync(userId);
+            return Ok(new { message = "Logout successful" });
         }
     }
 }

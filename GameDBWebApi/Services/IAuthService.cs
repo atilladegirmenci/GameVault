@@ -6,9 +6,9 @@ namespace GameDBWebApi.Services
     public interface IAuthService
     {
         Task<LoginResponseDto> LoginAsync(LoginRequestDto request);
-
+        Task<LoginResponseDto> RefreshTokenAsync(RefreshTokenRequestDto request);
         Task RegisterAsync(RegisterRequestDto request);
 
-        Task LogoutAsync();
+        Task LogoutAsync(int userId);
     }
 }

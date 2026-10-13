@@ -79,11 +79,12 @@ builder.Services.AddSwaggerGen(c =>
 
 
 
-builder.Services.AddScoped<IUserRepository, UserRepository>();
+//builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddHttpClient<IRawgApiService, RawgApiService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 var app = builder.Build();
 
