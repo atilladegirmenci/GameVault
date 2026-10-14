@@ -14,6 +14,7 @@ namespace GameDBWebApi.Data
         public DbSet<UserGame> UserGames { get; set; }
         public DbSet<UserList> UserLists { get; set; }
         public DbSet<UserListGame> UserListGames { get; set; }
+        public DbSet<Review> Reviews { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -103,6 +104,48 @@ namespace GameDBWebApi.Data
                       .WithMany()
                       .HasForeignKey(ulg => ulg.GameId)
                       .OnDelete(DeleteBehavior.Cascade); // If game is removed from global DB, remove it from all lists
+            });
+
+            // 6. REVIEW CONFIGURATION
+            modelBuilder.Entity<Review>(entity =>
+            {
+                entity.ToTable("Reviews", table =>
+                {
+                    table.HasCheckConstraint(
+                        "CK_Reviews_Rating",
+                        "[Rating] >= 1 AND [Rating] <= 5");
+                });
+
+                entity.HasKey(r => r.Id);
+
+                // Rating must be between 1 and 5
+                entity.Property(r => r.Rating)
+                      .IsRequired();
+
+                // Comment is required and limited in length
+                entity.Property(r => r.Comment)
+                      .IsRequired()
+                      .HasMaxLength(2000);
+
+                entity.Property(r => r.CreatedAt)
+                      .IsRequired();
+
+                // Relationship: User -> Reviews
+                entity.HasOne(r => r.User)
+                      .WithMany()
+                      .HasForeignKey(r => r.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Relationship: Game -> Reviews
+                entity.HasOne(r => r.Game)
+                      .WithMany()
+                      .HasForeignKey(r => r.GameId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Indexes for filtering and pagination
+                entity.HasIndex(r => new { r.GameId, r.CreatedAt });
+
+                entity.HasIndex(r => new { r.UserId, r.CreatedAt });
             });
         }
     }

@@ -48,7 +48,7 @@ namespace GameDBWebApi.Controllers
         public async Task<IActionResult> GetGameFeed(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
-            [FromQuery] string ordering = "added")
+            [FromQuery] string ordering = "added") //TODO: Make ordering an enum or a set of predefined values to avoid invalid inputs
         {
             int? userId = GetOptionalUserId();
 
