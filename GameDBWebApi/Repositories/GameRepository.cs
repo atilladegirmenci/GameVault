@@ -22,5 +22,10 @@ namespace GameDBWebApi.Repositories
         {
             return await _context.Games.FirstOrDefaultAsync(g => g.RawgId == rawgId);
         }
+
+        public async Task<Game?> GetByIdAsync(int gameId)
+        {
+            return await _context.Games.FirstOrDefaultAsync(g => g.Id == gameId);
+        }
     }
 }
