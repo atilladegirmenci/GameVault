@@ -1,5 +1,6 @@
 ﻿using GameDBWebApi.DTOs.Game;
 using GameDBWebApi.Entites;
+using GameDBWebApi.Exceptions;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc.Routing;
 using System.Text.Json;
@@ -34,12 +35,16 @@ namespace GameDBWebApi.Services
             var response = await _httpClient.GetAsync(requestUrl);
             _logger.LogInformation($"fetching game details for RawgId: {rawgId}");
 
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                _logger.LogWarning("Game with RawgId {RawgId} was not found on RAWG API.", rawgId);
+                throw new NotFoundException($"Game with ID {rawgId} was not found.");
+            }
+
             if (!response.IsSuccessStatusCode)
             {
-                // Handle error response maybe 404 or 500. i can add different handling logic for different status codes???
-                _logger.LogWarning("RAWG API request failed with status code: {StatusCode} for RawgId: {RawgId}", response.StatusCode, rawgId);
-                return null;
-
+                _logger.LogError("RAWG API request failed with status code: {StatusCode} for RawgId: {RawgId}", response.StatusCode, rawgId);
+                throw new ExternalServiceException($"External API error occurred while fetching game details. Status: {response.StatusCode}");
             }
 
             var jsonString = await response.Content.ReadAsStringAsync();
@@ -66,10 +71,16 @@ namespace GameDBWebApi.Services
 
             var response = await _httpClient.GetAsync(requestUrl);
 
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                _logger.LogWarning("Game details with RawgId {RawgId} were not found on RAWG API.", rawgId);
+                throw new NotFoundException($"Game details with ID {rawgId} were not found.");
+            }
+
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("RAWG API request failed with status code: {StatusCode} for RawgId: {RawgId}", response.StatusCode, rawgId);
-                throw new Exception($"RAWG API request failed with status code: {response.StatusCode}");
+                _logger.LogError("RAWG API request failed with status code: {StatusCode} for RawgId: {RawgId}", response.StatusCode, rawgId);
+                throw new ExternalServiceException($"External API error occurred while fetching game details. Status: {response.StatusCode}");
             }
 
             var jsonString = await response.Content.ReadAsStringAsync();
@@ -108,7 +119,9 @@ namespace GameDBWebApi.Services
 
             if (!string.IsNullOrWhiteSpace(keyword))
             {
-                requestUrl += $"&search={Uri.EscapeDataString(keyword)}";
+                var encodedKeyword = Uri.EscapeDataString(keyword.Trim());
+                requestUrl += $"&search={encodedKeyword}&search_precise=true&search_exact=true";
+
                 _logger.LogInformation("Searching games from RAWG. Page: {Page}, Keyword: {Keyword} ", page, keyword);
             }
             else
@@ -120,8 +133,11 @@ namespace GameDBWebApi.Services
 
             if(!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("RAWG API request failed with status code: {StatusCode}. URL: {Url}", response.StatusCode, requestUrl);
-                throw new Exception($"RAWG API request failed with status code: {response.StatusCode}");
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("RAWG API request failed with status code: {StatusCode}. URL: {Url}", response.StatusCode, requestUrl);
+                    throw new ExternalServiceException($"External API error occurred during game feed fetch. Status: {response.StatusCode}");
+                }
             }
 
             var jsonString = await response.Content.ReadAsStringAsync();

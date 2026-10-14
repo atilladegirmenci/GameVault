@@ -1,9 +1,10 @@
-﻿using GameDBWebApi.DTOs.Game;
+﻿using GameDBWebApi.DTOs;
+using GameDBWebApi.DTOs.Game;
+using GameDBWebApi.Entites;
+using GameDBWebApi.Exceptions;
 using GameDBWebApi.Repositories;
 using System.Security.AccessControl;
-using GameDBWebApi.Entites;
 using System.Text.Json.Serialization;
-using GameDBWebApi.DTOs;
 
 namespace GameDBWebApi.Services
 {
@@ -31,11 +32,6 @@ namespace GameDBWebApi.Services
                 _logger.LogInformation("Game with RawgId {RawgId} not found in local database. Fetching from RAWG API and saving to db", request.RawgId);
 
                 var rawGameData = await _rawgApiService.GetGameByRawgIdAsync(request.RawgId);
-
-                if(rawGameData == null)
-                {
-                    throw new Exception($"Game with RawgId {request.RawgId} not found in RAWG API.");
-                }
 
                 game = new Game
                 {
@@ -79,8 +75,8 @@ namespace GameDBWebApi.Services
         public async Task<GameDetailsResponseDto> GetGameDetailsAsync(int? userId, int rawgId)
         {
             var gameDetails = await _rawgApiService.GetGameDetailsByRawgIdAsync(rawgId);
-            
-            if(userId == null)
+
+            if (userId == null)
             {
                 return gameDetails;
             }
