@@ -35,9 +35,10 @@ namespace GameDBWebApi.Services
             }
 
             string accessToken = GenerateJwtToken(user);
-
             string refreshToken = GenerateRefreshToken();
-            user.RefreshToken = refreshToken;
+
+            // Compute the fingerprint
+            user.RefreshTokenFingerprint = ComputeTokenFingerprint(refreshToken);
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7); // Refresh token valid for 7 days
 
             await _unitOfWork.CompleteAsync();
@@ -59,8 +60,9 @@ namespace GameDBWebApi.Services
                 throw new BadRequestException("Refresh token is required.");
             }
 
-            // Find user by the provided refresh token
-            var user = await _unitOfWork.Users.GetByRefreshTokenAsync(request.RefreshToken);
+            // Find user by the fingerprint of the provided refresh token
+            var fingerprint = ComputeTokenFingerprint(request.RefreshToken);
+            var user = await _unitOfWork.Users.GetByRefreshTokenFingerprintAsync(fingerprint);
 
             if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
             {
@@ -71,7 +73,8 @@ namespace GameDBWebApi.Services
             string newAccessToken = GenerateJwtToken(user);
             string newRefreshToken = GenerateRefreshToken();
 
-            user.RefreshToken = newRefreshToken;
+            // rotate: compute fingerprint and hash, do not store plaintext
+            user.RefreshTokenFingerprint = ComputeTokenFingerprint(newRefreshToken);
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
 
             await _unitOfWork.CompleteAsync();
@@ -122,7 +125,7 @@ namespace GameDBWebApi.Services
             var user = await _unitOfWork.Users.GetByIdAsync(userId);
             if (user != null)
             {
-                user.RefreshToken = null;
+                user.RefreshTokenFingerprint = null;
                 user.RefreshTokenExpiryTime = default;
                 await _unitOfWork.CompleteAsync();
                 
@@ -173,6 +176,14 @@ namespace GameDBWebApi.Services
             return Convert.ToBase64String(randomNumber);
         }
 
+        private string ComputeTokenFingerprint(string token)
+        {
+            using var sha256 = SHA256.Create();
+            var bytes = Encoding.UTF8.GetBytes(token);
+            var hash = sha256.ComputeHash(bytes);
+            return Convert.ToBase64String(hash);
+        }
+
         private void ValidateRegisterRequest(RegisterRequestDto request)
         {
 
@@ -181,12 +192,6 @@ namespace GameDBWebApi.Services
             {
                 throw new BadRequestException("The provided email address format is invalid.");
             }
-
-            //// Validate username (must consist only of letters)
-            //if (string.IsNullOrWhiteSpace(request.UserName) || !request.UserName.All(char.IsLetter))
-            //{
-            //    throw new BadRequestException("Username must consist only of letters.");
-            //}
 
             // Validate password (at least 8 characters, must contain both letters and numbers)
             if (string.IsNullOrWhiteSpace(request.Password) ||

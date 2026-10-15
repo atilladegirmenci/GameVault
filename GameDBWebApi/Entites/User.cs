@@ -9,7 +9,8 @@ namespace GameDBWebApi.Entites
         public string HashPassword { get; set; }
 
         // TOKEN ROTATION PROPERTIES
-        public string? RefreshToken { get; set; }
+        // Store only the fingerprint (SHA256) of the refresh token for lookup
+        public string? RefreshTokenFingerprint { get; set; }
         public DateTime RefreshTokenExpiryTime { get; set; }
 
         //NAV PROPERTIES
