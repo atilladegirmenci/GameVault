@@ -1,5 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using GameDBWebApi.Entites;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace GameDBWebApi.Data
 {
@@ -7,6 +11,55 @@ namespace GameDBWebApi.Data
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
+        }
+
+        private void ApplyTimestamps()
+        {
+            var now = DateTime.UtcNow;
+
+            foreach (var entry in ChangeTracker.Entries())
+            {
+                if (entry.Entity == null)
+                    continue;
+
+                var createdProp = entry.Metadata.FindProperty("CreatedAt");
+                var updatedProp = entry.Metadata.FindProperty("UpdatedAt");
+
+                if (entry.State == EntityState.Added)
+                {
+                    if (createdProp != null)
+                    {
+                        // set created only if not already set
+                        var current = entry.Property("CreatedAt").CurrentValue;
+                        if (current == null || (DateTime)current == default)
+                            entry.Property("CreatedAt").CurrentValue = now;
+                    }
+
+                    if (updatedProp != null)
+                    {
+                        entry.Property("UpdatedAt").CurrentValue = now;
+                    }
+                }
+                else if (entry.State == EntityState.Modified)
+                {
+                    if (updatedProp != null)
+                    {
+                        entry.Property("UpdatedAt").CurrentValue = now;
+                    }
+                }
+            }
+        }
+
+        public override int SaveChanges()
+        {
+            ApplyTimestamps();
+            return base.SaveChanges();
+        }
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            ApplyTimestamps();
+            return base.SaveChangesAsync(cancellationToken);
         }
 
         public DbSet<User> Users { get; set; }
@@ -34,6 +87,15 @@ namespace GameDBWebApi.Data
                 // Email must be unique and required
                 entity.Property(u => u.UserEmail).IsRequired().HasMaxLength(100);
                 entity.HasIndex(u => u.UserEmail).IsUnique();
+
+                // Timestamps: ensure non-nullable at the database level and provide a SQL default
+                entity.Property(u => u.CreatedAt)
+                      .IsRequired()
+                      .HasDefaultValueSql("GETUTCDATE()");
+
+                entity.Property(u => u.UpdatedAt)
+                      .IsRequired()
+                      .HasDefaultValueSql("GETUTCDATE()");
             });
 
             // 2. GAME CONFIGURATION

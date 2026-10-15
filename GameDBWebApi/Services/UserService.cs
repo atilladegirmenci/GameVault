@@ -1,6 +1,6 @@
-﻿using GameDBWebApi.DTOs.Auth;
-using GameDBWebApi.Entites;
+﻿using GameDBWebApi.Entites;
 using GameDBWebApi.Repositories;
+using GameDBWebApi.DTOs.User;
 
 namespace GameDBWebApi.Services
 {
@@ -16,16 +16,39 @@ namespace GameDBWebApi.Services
             _configuration = configuration;
         }
 
-        //TODO: create a dto to return only the necessary user information instead of returning the entire User entity
-        public async Task<User> GetUserByIdAsync(int id)
+        // Return a DTO with profile info and a short list of the user's games
+        public async Task<UserProfileDto> GetUserByIdAsync(int id)
         {
-            var  user = await _unitOfWork.Users.GetByIdAsync(id);
-            if(user == null)
+            var user = await _unitOfWork.Users.GetByIdAsync(id);
+            if (user == null)
             {
                 _logger.LogWarning("User with ID {UserId} not found.", id);
                 throw new Exception("User not found.");
             }
-            return user;
+
+            // fetch user's games (first page, limited size)
+            const int page = 1;
+            const int pageSize = 20;
+            var userGamesPaginated = await _unitOfWork.UserGames.GetByUserIdAsync(id, page, pageSize);
+
+            var gameDtos = userGamesPaginated.Select(ug => new DTOs.Game.GameCardDto
+            {
+                RawgId = ug.Game.RawgId,
+                Title = ug.Game.Title,
+                ImageUrl = ug.Game.ImageUrl,
+                Score = ug.Game.Score,
+                GameId = ug.Game.Id,
+                Status = ug.Status,
+                UpdatedDate = ug.UpdatedDate
+            }).ToList();
+
+            return new UserProfileDto
+            {
+                Id = user.Id,
+                UserName = user.UserName,
+                Email = user.UserEmail,
+                UserGames = gameDtos
+            };
         }
 
         public async Task UpdateAsync(int id, UpdateRequestDto request)
