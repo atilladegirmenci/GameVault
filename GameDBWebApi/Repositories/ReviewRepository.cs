@@ -32,6 +32,8 @@ namespace GameDBWebApi.Repositories
         {
             return await _context.Reviews
                 .AsNoTracking()
+                .Include(r => r.Game)
+                .Include(r => r.User)
                 .Where(r => r.GameId == gameId)
                 .OrderByDescending(r => r.CreatedAt)
                 .Skip((page - 1) * pageSize)
@@ -53,6 +55,8 @@ namespace GameDBWebApi.Repositories
         {
             return await _context.Reviews
                 .AsNoTracking()
+                .Include(r => r.Game)
+                .Include(r => r.User)
                 .Where(r => r.UserId == userId)
                 .OrderByDescending(r => r.CreatedAt)
                 .Skip((page - 1) * pageSize)
