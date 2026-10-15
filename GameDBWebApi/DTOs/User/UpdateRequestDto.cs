@@ -1,4 +1,4 @@
-﻿namespace GameDBWebApi.DTOs.Auth
+namespace GameDBWebApi.DTOs.User
 {
     public class UpdateRequestDto
     {
