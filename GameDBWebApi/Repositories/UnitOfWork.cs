@@ -10,6 +10,7 @@ namespace GameDBWebApi.Repositories
         public IGameRepository Games { get; private set; }
         public IUserGameRepository UserGames { get; private set; }
         public IReviewRepository Reviews { get; private set; }
+        public IUserListRepository UserLists { get; private set; }
 
         public UnitOfWork(AppDbContext context)
         {
@@ -18,6 +19,7 @@ namespace GameDBWebApi.Repositories
             Games = new GameRepository(_context);
             UserGames = new UserGameRepository(_context);
             Reviews = new ReviewRepository(_context);
+            UserLists = new UserListRepository(_context);
         }
 
         public async Task<int> CompleteAsync()

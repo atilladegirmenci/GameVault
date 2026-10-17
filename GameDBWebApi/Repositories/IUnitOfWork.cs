@@ -6,6 +6,7 @@
         IGameRepository Games { get; }
         IUserGameRepository UserGames { get; }
         IReviewRepository Reviews { get; }
+        IUserListRepository UserLists { get; }
         Task<int> CompleteAsync();
     }
 }
