@@ -24,7 +24,7 @@ namespace GameDBWebApi.Services
             if (string.IsNullOrEmpty(_apiKey))
             {
                 _logger.LogCritical("RAWG API Key is missing or not configured");
-                throw new Exception("THERE IS A PROBLEM WITH RAWG API KEY");
+                throw new ExternalServiceException("THERE IS A PROBLEM WITH RAWG API KEY");
             }
 
         }
@@ -88,7 +88,7 @@ namespace GameDBWebApi.Services
 
             if (rawgData == null)
             {
-                throw new Exception($"Failed to deserialize game details for RawgId: {rawgId}");
+                throw new ExternalServiceException($"Failed to deserialize game details for RawgId: {rawgId}");
             }
 
             return new GameDetailsResponseDto

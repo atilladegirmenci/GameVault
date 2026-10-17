@@ -138,7 +138,15 @@ namespace GameDBWebApi.Data
 
                 entity.HasKey(ul => ul.Id);
 
-                entity.Property(ul => ul.Name).IsRequired().HasMaxLength(100);
+                entity.Property(ul => ul.ListTitle)
+                      .IsRequired()
+                      .HasMaxLength(100);
+
+                entity.Property(ul => ul.CreatedAt)
+                      .IsRequired();
+
+                entity.Property(ul => ul.UpdatedAt)
+                      .IsRequired(false);
 
                 // Relationship configuration (A user owns many lists)
                 entity.HasOne(ul => ul.User)

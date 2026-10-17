@@ -16,7 +16,7 @@ namespace GameDBWebApi.Entites
         /// <summary>
         /// User-defined name for the list.
         /// </summary>
-        public string Name { get; set; }
+        public string ListTitle { get; set; }
 
         // foreign key: who owns this list
         /// <summary>
@@ -33,5 +33,9 @@ namespace GameDBWebApi.Entites
         /// Games contained in this list via the junction entity.
         /// </summary>
         public ICollection<UserListGame> ListedGames { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+
+        public DateTime? UpdatedAt { get; set; }
     }
 }

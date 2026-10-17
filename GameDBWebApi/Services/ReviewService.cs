@@ -93,7 +93,7 @@ namespace GameDBWebApi.Services
             var createdReview = await _unitOfWork.Reviews
                 .GetByIdAsync(review.Id);
 
-            return MapToResponseDto(createdReview ?? review); // TODO: userName ve rawgId alanları boş dönüyor; bunları service katmanında dinamik olarak doldur.
+            return MapToResponseDto(createdReview ?? review); 
         }
 
         public async Task DeleteReviewAsync(int userId, int  reviewId)
