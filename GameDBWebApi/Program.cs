@@ -9,6 +9,8 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text;
+using FluentValidation;
+using FluentValidation.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,7 +37,25 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddControllers();
+// Add controllers and register a global model validation filter so validation
+// errors are converted to BadRequestException and handled by GlobalExceptionMiddleware
+builder.Services
+    .AddControllers(options =>
+    {
+        options.Filters.Add<GameDBWebApi.Filters.ValidateModelFilter>();
+    })
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        // Suppress the default ASP.NET Core behavior that auto-returns 400 for invalid ModelState
+        // so our ValidateModelFilter can throw BadRequestException and the GlobalExceptionMiddleware
+        // will produce a consistent error response shape.
+        options.SuppressModelStateInvalidFilter = true;
+    });
+
+// FluentValidation registration: scans this assembly for validator classes
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddFluentValidationClientsideAdapters();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(

@@ -55,11 +55,6 @@ namespace GameDBWebApi.Services
 
         public async Task<LoginResponseDto> RefreshTokenAsync(RefreshTokenRequestDto request)
         {
-            if (string.IsNullOrWhiteSpace(request.RefreshToken))
-            {
-                throw new BadRequestException("Refresh token is required.");
-            }
-
             // Find user by the fingerprint of the provided refresh token
             var fingerprint = ComputeTokenFingerprint(request.RefreshToken);
             var user = await _unitOfWork.Users.GetByRefreshTokenFingerprintAsync(fingerprint);
@@ -91,9 +86,8 @@ namespace GameDBWebApi.Services
         public async Task RegisterAsync(RegisterRequestDto request)
         {
 
-            ValidateRegisterRequest(request);
-
             _logger.LogInformation("Attempting to register user: {Username}, {Email}", request.UserName, request.Email);
+           
             if (await _unitOfWork.Users.EmailExistsAsync(request.Email))
             {
                 throw new ConflictException("Email already exists.");
@@ -182,38 +176,6 @@ namespace GameDBWebApi.Services
             var bytes = Encoding.UTF8.GetBytes(token);
             var hash = sha256.ComputeHash(bytes);
             return Convert.ToBase64String(hash);
-        }
-
-        private void ValidateRegisterRequest(RegisterRequestDto request)
-        {
-
-            // Validate email format
-            if (string.IsNullOrWhiteSpace(request.Email) || !IsValidEmail(request.Email))
-            {
-                throw new BadRequestException("The provided email address format is invalid.");
-            }
-
-            // Validate password (at least 8 characters, must contain both letters and numbers)
-            if (string.IsNullOrWhiteSpace(request.Password) ||
-                request.Password.Length < 8 ||
-                !request.Password.Any(char.IsLetter) ||
-                !request.Password.Any(char.IsDigit))
-            {
-                throw new BadRequestException("Password must be at least 8 characters long and contain both letters and numbers.");
-            }
-        }
-
-        private bool IsValidEmail(string email)
-        {
-            try
-            {
-                var addr = new System.Net.Mail.MailAddress(email);
-                return addr.Address == email;
-            }
-            catch
-            {
-                return false;
-            }
         }
     }
 }

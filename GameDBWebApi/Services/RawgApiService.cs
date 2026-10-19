@@ -1,8 +1,6 @@
 ﻿using GameDBWebApi.DTOs.Game;
 using GameDBWebApi.Entites;
 using GameDBWebApi.Exceptions;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc.Routing;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -21,10 +19,10 @@ namespace GameDBWebApi.Services
             _logger = logger;
             _apiKey = _configuration["RawgApiKey"] ?? string.Empty; 
 
-            if (string.IsNullOrEmpty(_apiKey))
+            if (string.IsNullOrWhiteSpace(_apiKey))
             {
                 _logger.LogCritical("RAWG API Key is missing or not configured");
-                throw new ExternalServiceException("THERE IS A PROBLEM WITH RAWG API KEY");
+                throw new ExternalServiceException("RAWG API key is not configured.");
             }
 
         }
@@ -133,11 +131,10 @@ namespace GameDBWebApi.Services
 
             if(!response.IsSuccessStatusCode)
             {
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogWarning("RAWG API request failed with status code: {StatusCode}. URL: {Url}", response.StatusCode, requestUrl);
-                    throw new ExternalServiceException($"External API error occurred during game feed fetch. Status: {response.StatusCode}");
-                }
+               
+                _logger.LogWarning("RAWG API request failed with status code: {StatusCode}. URL: {Url}", response.StatusCode, requestUrl);
+                throw new ExternalServiceException($"External API error occurred during game feed fetch. Status: {response.StatusCode}");
+               
             }
 
             var jsonString = await response.Content.ReadAsStringAsync();

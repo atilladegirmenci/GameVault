@@ -20,11 +20,6 @@ namespace GameDBWebApi.Services
 
         public async Task<UserListResponseDto> CreateListAsync(int userId, CreateUserListRequestDto request)
         { 
-            if(string.IsNullOrWhiteSpace(request.ListTitle))
-            {
-                throw new BadRequestException("List title cannot be null or empty.");
-            }
-
             var userList = new UserList
             {
                 UserId = userId,
