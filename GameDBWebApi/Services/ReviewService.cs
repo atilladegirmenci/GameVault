@@ -33,34 +33,7 @@ namespace GameDBWebApi.Services
                     "RAWG game ID must be greater than zero.");
             }
 
-            ValidateReview(request);
-
-            var game = await _unitOfWork.Games
-                .GetByRawgIdAsync(rawgId);
-
-            if (game == null)
-            {
-                var rawGameData = await _rawgApiService
-                    .GetGameByRawgIdAsync(rawgId);
-
-                if (rawGameData == null)
-                {
-                    throw new NotFoundException(
-                        $"Game with RAWG ID {rawgId} was not found.");
-                }
-
-                game = new Game
-                {
-                    RawgId = rawgId,
-                    Title = rawGameData.Title,
-                    ImageUrl = rawGameData.ImageUrl,
-                    ReleaseDate = rawGameData.ReleaseDate,
-                    Score = rawGameData.Score
-                };
-
-                await _unitOfWork.Games.AddAsync(game);
-                await _unitOfWork.CompleteAsync();
-            }
+            var game = await GetOrCreateGameAsync(rawgId);
 
             var alreadyReviewed = await _unitOfWork.Reviews
                 .UserReviewExistsAsync(game.Id, userId);
@@ -135,36 +108,7 @@ namespace GameDBWebApi.Services
                     "RAWG game ID must be greater than zero.");
             }
 
-            var game = await _unitOfWork.Games
-                .GetByRawgIdAsync(RawgId);
-
-            if (game == null)
-            {
-                _logger.LogInformation(
-                    "Game with RAWG ID {RawgId} not found locally. Fetching from RAWG API.",
-                    RawgId);
-
-                var rawGameData = await _rawgApiService
-                    .GetGameByRawgIdAsync(RawgId);
-
-                if (rawGameData == null)
-                {
-                    throw new NotFoundException(
-                        $"Game with RAWG ID {RawgId} was not found.");
-                }
-
-                game = new Game
-                {
-                    RawgId = RawgId,
-                    Title = rawGameData.Title,
-                    ImageUrl = rawGameData.ImageUrl,
-                    ReleaseDate = rawGameData.ReleaseDate,
-                    Score = rawGameData.Score
-                };
-
-                await _unitOfWork.Games.AddAsync(game);
-                await _unitOfWork.CompleteAsync();
-            }
+            var game = await GetOrCreateGameAsync(RawgId);
 
             var reviews = await _unitOfWork.Reviews
                 .GetByGameIdAsync(game.Id, page, pageSize);
@@ -222,6 +166,38 @@ namespace GameDBWebApi.Services
                 pageSize);
         }
 
+        private async Task<Game> GetOrCreateGameAsync(int rawgId)
+        {
+            var game = await _unitOfWork.Games.GetByRawgIdAsync(rawgId);
+
+            if (game != null)
+            {
+                return game;
+            }
+
+            var rawGameData = await _rawgApiService.GetGameByRawgIdAsync(rawgId);
+
+            if (rawGameData == null)
+            {
+                throw new NotFoundException(
+                    $"Game with RAWG ID {rawgId} was not found.");
+            }
+
+            game = new Game
+            {
+                RawgId = rawgId,
+                Title = rawGameData.Title,
+                ImageUrl = rawGameData.ImageUrl,
+                ReleaseDate = rawGameData.ReleaseDate,
+                Score = rawGameData.Score
+            };
+
+            await _unitOfWork.Games.AddAsync(game);
+            await _unitOfWork.CompleteAsync();
+
+            return game;
+        }
+
         private static void ValidatePagination(int page, int pageSize)
         {
             if (page < 1)
@@ -236,33 +212,7 @@ namespace GameDBWebApi.Services
                     "Page size must be between 1 and 100.");
             }
         }
-        private static void ValidateReview(CreateReviewRequestDto review)
-        {
-            if (review == null)
-            {
-                throw new BadRequestException(
-                    "Review cannot be null.");
-            }
-
-            if (review.Rating < 1 || review.Rating > 5)
-            {
-                throw new BadRequestException(
-                    "Rating must be between 1 and 5.");
-            }
-
-            if (string.IsNullOrWhiteSpace(review.Comment))
-            {
-                throw new BadRequestException(
-                    "Review comment cannot be empty.");
-            }
-
-            if (review.Comment.Length > 2000)
-            {
-                throw new BadRequestException(
-                    "Review comment cannot exceed 2000 characters.");
-            }
-        }
-
+      
         private static ReviewResponseDto MapToResponseDto(Review review)
         {
             return new ReviewResponseDto

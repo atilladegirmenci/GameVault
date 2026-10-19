@@ -37,22 +37,34 @@ namespace GameDBWebApi.MiddleWares
 
             var (statusCode, message) = exception switch
             {
-                BusinessException businessEx => (businessEx.StatusCode, businessEx.Message),
+                BusinessException businessEx => 
+                    (businessEx.StatusCode, businessEx.Message),
 
-                UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "Unauthorized access."),
+                UnauthorizedAccessException => 
+                    (StatusCodes.Status401Unauthorized, "Unauthorized access."),
 
-                _ => (StatusCodes.Status500InternalServerError, "An unexpected internal server error occurred. Please try again later.")
+                _ => 
+                    (StatusCodes.Status500InternalServerError, 
+                        "An unexpected internal server error occurred. Please try again later.")
             };
 
             context.Response.StatusCode = statusCode;
 
-            var errorResponse = new
+            if (exception is BadRequestException { Errors: not null } badRequestEx)
             {
-                message = message,
-                statusCode = statusCode
-            };
+                return context.Response.WriteAsJsonAsync(new
+                {
+                    message,
+                    statusCode,
+                    errors = badRequestEx.Errors
+                });
+            }
 
-            return context.Response.WriteAsJsonAsync(errorResponse);
+            return context.Response.WriteAsJsonAsync(new
+            {
+                message,
+                statusCode
+            });
         }
     }
 }

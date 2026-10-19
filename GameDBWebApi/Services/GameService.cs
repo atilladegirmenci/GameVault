@@ -3,22 +3,18 @@ using GameDBWebApi.DTOs.Game;
 using GameDBWebApi.Entites;
 using GameDBWebApi.Exceptions;
 using GameDBWebApi.Repositories;
-using System.Security.AccessControl;
-using System.Text.Json.Serialization;
 
 namespace GameDBWebApi.Services
 {
     public class GameService : IGameService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IConfiguration _configuration;
         private readonly IRawgApiService _rawgApiService;
         private readonly ILogger<GameService> _logger;
 
-        public GameService(IUnitOfWork unitOfWork, IConfiguration configuration, IRawgApiService rawgApiService, ILogger<GameService> logger)
+        public GameService(IUnitOfWork unitOfWork, IRawgApiService rawgApiService, ILogger<GameService> logger)
         {
             _unitOfWork = unitOfWork;
-            _configuration = configuration;
             _rawgApiService = rawgApiService;
             _logger = logger;
         }
