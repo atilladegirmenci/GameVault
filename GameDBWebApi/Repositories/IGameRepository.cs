@@ -7,5 +7,7 @@ namespace GameDBWebApi.Repositories
     {
         Task<Game?> GetByRawgIdAsync(int rawgId);
         Task AddAsync(Game game);
+
+        Task<Game?> GetByIdAsync(int gameId);
     }
 }

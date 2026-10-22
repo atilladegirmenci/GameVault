@@ -1,103 +1,194 @@
-#  GameVault
+# 🎮 GameVault
 
-GameVault is an ASP.NET Core Web API built with .NET 10. It provides a backend for managing personal game libraries, custom game lists, and player statuses while serving as a learning project focused on modern backend development practices.
+**GameVault** is an open-source game library management Web API built with **ASP.NET Core and .NET 10**. It allows users to manage their personal game collections, track their gaming progress, write reviews, and create custom game lists using data from the [RAWG Video Games Database API](https://rawg.io/apidocs).
 
-⚠️ This project is currently on hold.
+This project is both a functional backend application and an ongoing learning project focused on modern .NET development, RESTful API design, database management, authentication, and maintainable software architecture.
 
-I originally built this project to practice ASP.NET Core Web API development and backend architecture. Due to other commitments, development is currently paused.
+I'm open to **contributions, suggestions, feedback, and collaboration**. Whether you want to report a bug, suggest a feature, improve the codebase, or contribute directly, you're welcome to get involved!
 
-The project is open-source, and contributions, suggestions, and feedback are welcome.
+## ✨ Features
 
+### 🔐 Authentication and User Management
+- User registration and login with JWT-based authentication.
+- Password hashing using BCrypt.
+- Refresh token management with hashed token storage.
+- User account management.
 
-## 🚀 Features
+### 🎮 Game Library Management
+- Integration with the RAWG API to retrieve video game information.
+- Search and retrieve game details.
+- Manage a personal game library.
+- Track game statuses, including playing, completed, and planned-to-play games.
 
-- **User Authentication**: Secure JWT-based authentication (Login, Register).
-- **Game Management**: Integration with game databases to manage games, statuses, and custom lists. (currently using RAWG)
-- **Repository Pattern & Unit of Work**: Clean separation of concerns for data access.
-- **Entity Framework Core**: Code-first database management with EF Core.
-- **Logging**: Configured with **Serilog** for robust application logging.
-- **API Documentation**: Built-in Swagger/OpenAPI support for easy testing and documentation.
+### 📚 Custom Game Lists
+- Create, update, and delete custom game lists.
+- Add games to and remove games from lists.
+- Retrieve user lists and view the games they contain.
+- Enforce list ownership and prevent duplicate game entries.
 
-## 📌 Roadmap
+### ⭐ Game Reviews
+- Create and delete game reviews.
+- Retrieve reviews for a specific game.
+- Retrieve reviews written by a particular user.
+- Paginated review endpoints.
+- Input validation and ownership checks.
 
-- ✅ Structural Architecture (Repository Pattern & Unit of Work)
-- ✅ Basic User Authentication (JWT, Login, Register)
-- ✅ Database Schema & Code-First Migrations (using EF Core)
-- ✅ Basic CRUD Operations (User accounts, basic Game logic)
-- ✅ Unit Testing Infrastructure Setup
-- ⏳ Complete Unit Testing Suite (Increase coverage for Services & Controllers)
-- ⏳ Custom Game Lists Management (Creation, editing, and game assignment for lists)
-- ⏳ User Profile & Status Tracking (Finished, Playing, Backlog tracking)
-- ⏳ Refresh Token Authentication
-- ⏳ Integration Tests setup
-- ⏳ Docker Support & Containerization
+### 🛠️ Backend Engineering
+- RESTful API architecture using ASP.NET Core.
+- Repository Pattern and Unit of Work for data access.
+- Entity Framework Core with code-first migrations.
+- Structured application logging with Serilog.
+- Centralized exception handling and custom exceptions.
+- DTO-based request and response models.
+- Swagger/OpenAPI documentation.
+- Unit testing with xUnit, Moq, and FluentAssertions.
 
-## 🏗️ Architecture & Technologies
+## 🧰 Tech Stack
 
-- **Framework**: .NET 10 / ASP.NET Core Web API
-- **Database**: Entity Framework Core (SQL)
-- **Authentication**: JWT (JSON Web Tokens)
-- **Logging**: Serilog
-- **Testing**: xUnit, Moq, FluentAssertions (`GameDBWebApi.Tests`)
+| Technology | Purpose |
+|---|---|
+| C# / .NET 10 | Backend development |
+| ASP.NET Core Web API | REST API |
+| Entity Framework Core | ORM and database management |
+| SQL Server | Relational database |
+| JWT | Authentication |
+| BCrypt.Net-Next | Password hashing |
+| Serilog | Application logging |
+| RAWG API | Video game data |
+| Swagger / OpenAPI | API documentation |
+| xUnit, Moq, FluentAssertions | Unit testing |
+
+## 🏗️ Architecture
+
+The application follows a layered architecture to separate HTTP handling, business logic, and data access.
+
+- **Controllers:** Handle HTTP requests and responses.
+- **Services:** Implement application and business logic.
+- **Repositories:** Encapsulate data access operations.
+- **Unit of Work:** Coordinates repository operations and database persistence.
+- **DTOs:** Define API request and response contracts.
+- **Entities:** Represent the application's domain models.
+- **Data:** Contains `AppDbContext` and Entity Framework Core configurations.
+
+This structure aims to keep the codebase maintainable, testable, and easier to extend as new features are introduced.
 
 ## 📂 Project Structure
 
-- `GameDBWebApi/`
-  - `Controllers/`: Handles incoming HTTP requests and responses (`AuthController`, `GameController`, `UserController`).
-  - `DTOs/`: Data Transfer Objects used to shape data appropriately for requests/responses.
-  - `Entities/`: Database domain models (`User`, `Game`, `UserGame`, `UserList`).
-  - `Data/`: `AppDbContext` and core EF Core configurations.
-  - `Repositories/`: Data access logic (`UserRepository`, `UnitOfWork`).
-  - `Services/`: Business logic layer (e.g., `AuthService`).
-  - `GameDBWebApi.Tests/`: xUnit test project for unit testing services and controllers.
+```text
+GameVault/
+├── GameDBWebApi/
+│   ├── Controllers/
+│   ├── DTOs/
+│   ├── Entities/
+│   ├── Data/
+│   ├── Repositories/
+│   ├── Services/
+│   └── ...
+└── GameDBWebApi.Tests/
+```
 
-## 🤝 Contributing
+*Note: Folder and namespace names may vary slightly in the current implementation.*
 
-Contributions are welcome.
-
-If you'd like to improve the project, feel free to fork the repository, open an issue, or submit a pull request.
-
-## ⚙️ Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
-- [.NET 10 SDK](https://dotnet.microsoft.com/)
-- Visual Studio 2026 or later, Rider, or VS Code
-- SQL Server (or any EF Core compatible database depending on your connection string)
 
-### Setup Instructions
+- [.NET 10 SDK](https://dotnet.microsoft.com/download)
+- SQL Server
+- An API key from [RAWG](https://rawg.io/apidocs)
+- Visual Studio, Rider, or VS Code (optional)
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/atilladegirmenci/GameVault.git
-   cd GameVault
-   ```
+### 1. Clone the repository
 
-2. **Configure AppSettings**
-   Ensure your `appsettings.json` or `appsettings.Development.json` has the appropriate configurations for:
-   - `ConnectionStrings:DefaultConnection`
-   - `JwtSettings:SecretKey`, `Issuer`, and `Audience`
+```bash
+git clone https://github.com/atilladegirmenci/GameVault.git
+cd GameVault
+```
 
-3. **Apply Database Migrations**
-   Open your terminal in the `GameDBWebApi` project folder and update your database:
-   ```bash
-   dotnet ef database update
-   ```
+### 2. Configure application settings
 
-4. **Run the Application**
-   Start the API project:
-   ```bash
-   dotnet run --project GameDBWebApi
-   ```
-   Navigate to Swagger UI to test the endpoints: `https://localhost:<port>/swagger`
+Configure your database connection string and JWT settings using User Secrets, environment variables, or local development configuration.
 
-## 🧪 Testing
+Required settings include:
 
-The solution includes a test project `GameDBWebApi.Tests` using xUnit and Moq.
-To run the test suite, use the following command:
+- `ConnectionStrings:DefaultConnection`
+- `JwtSettings:SecretKey`
+- `JwtSettings:Issuer`
+- `JwtSettings:Audience`
+- Your RAWG API key, using the configuration key expected by the application.
+
+**Do not commit real API keys, JWT secrets, passwords, or other credentials to source control.**
+
+### 3. Apply database migrations
+
+From the solution directory, run:
+
+```bash
+dotnet ef database update --project GameDBWebApi
+```
+
+Ensure the required EF Core tooling and database configuration are available. If your project uses a separate startup project, specify it with `--startup-project`.
+
+### 4. Run the API
+
+```bash
+dotnet run --project GameDBWebApi
+```
+
+Open the Swagger UI at the URL printed in the terminal, usually:
+
+```text
+https://localhost:<port>/swagger
+```
+
+Use Swagger to explore and test the available endpoints.
+
+## 🧪 Running Tests
+
+Run the test suite from the solution directory:
+
 ```bash
 dotnet test
 ```
 
-## 📝 Logging
+The test project uses xUnit, Moq, and FluentAssertions to support automated testing of application behavior.
 
-The application logs errors, warnings, and system information to the file system (e.g., `Logs/gamevault-log-{Date}.txt`) using Serilog. Ensure the application has write access to the logging directory specified in the configuration.
+## 🗺️ Roadmap
+
+GameVault is actively evolving, and there are several areas where the codebase can be improved further.
+
+Potential and planned improvements include:
+
+- Expanding unit and integration test coverage.
+- Reviewing DTO and entity validation rules.
+- Reviewing transaction boundaries and concurrency handling.
+- Auditing database indexes and query performance.
+- Improving RAWG API resilience with retries, circuit breakers, and caching.
+- Enhancing structured logging with correlation IDs and security audit events.
+- Centralizing error messages and improving consistency.
+- Exploring Docker support and containerization.
+
+Progress and proposed improvements are tracked through [GitHub Issues](https://github.com/atilladegirmenci/GameVault/issues).
+
+## 🤝 Contributing
+
+Contributions and constructive feedback are welcome!
+
+If you're interested in improving GameVault, you can:
+
+- **Report bugs** by opening an issue.
+- **Suggest features** or improvements.
+- **Discuss architectural decisions** and share technical feedback.
+- **Submit pull requests** for bug fixes, features, documentation, or tests.
+
+For larger changes, consider opening an issue first so we can discuss the proposed approach before implementation.
+
+Whether you're interested in .NET development, backend architecture, database design, testing, or open-source collaboration, your input is appreciated.
+
+## 📄 License
+
+Please check the repository for license information. If no license has been added, the project's reuse and contribution terms should be clarified before others use or distribute the code.
+
+---
+
+**Built with C#, ASP.NET Core, and a passion for backend development.**

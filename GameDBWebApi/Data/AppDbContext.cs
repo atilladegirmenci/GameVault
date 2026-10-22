@@ -1,5 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using GameDBWebApi.Entites;
+using System;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace GameDBWebApi.Data
 {
@@ -9,11 +13,61 @@ namespace GameDBWebApi.Data
         {
         }
 
+        private void ApplyTimestamps()
+        {
+            var now = DateTime.UtcNow;
+
+            foreach (var entry in ChangeTracker.Entries())
+            {
+                if (entry.Entity == null)
+                    continue;
+
+                var createdProp = entry.Metadata.FindProperty("CreatedAt");
+                var updatedProp = entry.Metadata.FindProperty("UpdatedAt");
+
+                if (entry.State == EntityState.Added)
+                {
+                    if (createdProp != null)
+                    {
+                        // set created only if not already set
+                        var current = entry.Property("CreatedAt").CurrentValue;
+                        if (current == null || (DateTime)current == default)
+                            entry.Property("CreatedAt").CurrentValue = now;
+                    }
+
+                    if (updatedProp != null)
+                    {
+                        entry.Property("UpdatedAt").CurrentValue = now;
+                    }
+                }
+                else if (entry.State == EntityState.Modified)
+                {
+                    if (updatedProp != null)
+                    {
+                        entry.Property("UpdatedAt").CurrentValue = now;
+                    }
+                }
+            }
+        }
+
+        public override int SaveChanges()
+        {
+            ApplyTimestamps();
+            return base.SaveChanges();
+        }
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            ApplyTimestamps();
+            return base.SaveChangesAsync(cancellationToken);
+        }
+
         public DbSet<User> Users { get; set; }
         public DbSet<Game> Games { get; set; }
         public DbSet<UserGame> UserGames { get; set; }
         public DbSet<UserList> UserLists { get; set; }
         public DbSet<UserListGame> UserListGames { get; set; }
+        public DbSet<Review> Reviews { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -33,6 +87,15 @@ namespace GameDBWebApi.Data
                 // Email must be unique and required
                 entity.Property(u => u.UserEmail).IsRequired().HasMaxLength(100);
                 entity.HasIndex(u => u.UserEmail).IsUnique();
+
+                // Timestamps: ensure non-nullable at the database level and provide a SQL default
+                entity.Property(u => u.CreatedAt)
+                      .IsRequired()
+                      .HasDefaultValueSql("GETUTCDATE()");
+
+                entity.Property(u => u.UpdatedAt)
+                      .IsRequired()
+                      .HasDefaultValueSql("GETUTCDATE()");
             });
 
             // 2. GAME CONFIGURATION
@@ -75,7 +138,15 @@ namespace GameDBWebApi.Data
 
                 entity.HasKey(ul => ul.Id);
 
-                entity.Property(ul => ul.Name).IsRequired().HasMaxLength(100);
+                entity.Property(ul => ul.ListTitle)
+                      .IsRequired()
+                      .HasMaxLength(100);
+
+                entity.Property(ul => ul.CreatedAt)
+                      .IsRequired();
+
+                entity.Property(ul => ul.UpdatedAt)
+                      .IsRequired(false);
 
                 // Relationship configuration (A user owns many lists)
                 entity.HasOne(ul => ul.User)
@@ -103,6 +174,48 @@ namespace GameDBWebApi.Data
                       .WithMany()
                       .HasForeignKey(ulg => ulg.GameId)
                       .OnDelete(DeleteBehavior.Cascade); // If game is removed from global DB, remove it from all lists
+            });
+
+            // 6. REVIEW CONFIGURATION
+            modelBuilder.Entity<Review>(entity =>
+            {
+                entity.ToTable("Reviews", table =>
+                {
+                    table.HasCheckConstraint(
+                        "CK_Reviews_Rating",
+                        "[Rating] >= 1 AND [Rating] <= 5");
+                });
+
+                entity.HasKey(r => r.Id);
+
+                // Rating must be between 1 and 5
+                entity.Property(r => r.Rating)
+                      .IsRequired();
+
+                // Comment is required and limited in length
+                entity.Property(r => r.Comment)
+                      .IsRequired()
+                      .HasMaxLength(2000);
+
+                entity.Property(r => r.CreatedAt)
+                      .IsRequired();
+
+                // Relationship: User -> Reviews
+                entity.HasOne(r => r.User)
+                      .WithMany()
+                      .HasForeignKey(r => r.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Relationship: Game -> Reviews
+                entity.HasOne(r => r.Game)
+                      .WithMany()
+                      .HasForeignKey(r => r.GameId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                // Indexes for filtering and pagination
+                entity.HasIndex(r => new { r.GameId, r.CreatedAt });
+
+                entity.HasIndex(r => new { r.UserId, r.CreatedAt });
             });
         }
     }

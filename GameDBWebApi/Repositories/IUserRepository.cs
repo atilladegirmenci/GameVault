@@ -10,7 +10,8 @@ namespace GameDBWebApi.Repositories
         Task<User?> GetByUserNameAsync(string username);
         Task<bool> EmailExistsAsync(string email);
         Task<User?> GetByUserMailAsync(string usermail);
-        Task<User?> GetByRefreshTokenAsync(string refreshToken);
+        // Lookup user by stored refresh token fingerprint (SHA256 of token)
+        Task<User?> GetByRefreshTokenFingerprintAsync(string fingerprint);
         Task<bool> UserNameExistsAsync(string userName);
     }
 }

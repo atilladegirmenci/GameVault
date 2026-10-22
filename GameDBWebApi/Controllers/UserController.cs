@@ -1,4 +1,4 @@
-﻿using GameDBWebApi.DTOs.Auth;
+﻿using GameDBWebApi.DTOs.User;
 using GameDBWebApi.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -23,8 +23,8 @@ namespace GameDBWebApi.Controllers
         {
             var currentUserId = GetCurrentUserId();
 
-            var user = await _userService.GetUserByIdAsync(currentUserId);
-            return Ok(user);
+            var profile = await _userService.GetUserByIdAsync(currentUserId);
+            return Ok(profile);
         }
 
         [Authorize]

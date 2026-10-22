@@ -43,9 +43,14 @@ namespace GameDBWebApi.Repositories
         {
             return await _context.Users.FirstOrDefaultAsync(u => u.UserEmail == usermail);
         }
-        public async Task<User?> GetByRefreshTokenAsync(string refreshToken)
+        // Fingerprint-only lookup: caller should compute SHA256 fingerprint and pass it here
+        // This avoids storing any form of the token in the database.
+
+        public async Task<User?> GetByRefreshTokenFingerprintAsync(string fingerprint)
         {
-            return await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
+            return await _context.Users
+                .FirstOrDefaultAsync(
+                    u => u.RefreshTokenFingerprint == fingerprint);
         }
         public async Task<bool> UserNameExistsAsync(string userName)
         {
