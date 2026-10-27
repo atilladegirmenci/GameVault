@@ -4,19 +4,21 @@ using GameDBWebApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using Serilog;
-using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using GameDBWebApi.Constants;
+using Microsoft.VisualBasic;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT Secret Key is missing!");
+var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException(ErrorMessages.Auth.JwtSecretKeyNotConfigured);
+
+var rawgApiKey = builder.Configuration["RawgApiKey"] ?? throw new InvalidOperationException(ErrorMessages.External.RawgApiKeyNotConfigured);
 
 builder.Services.AddAuthentication(options =>
 {

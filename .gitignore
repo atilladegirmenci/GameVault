@@ -361,3 +361,10 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Graphify generated output
+graphify-out/
+
+
+# GitHub Copilot instructions
+.github/copilot-instructions.md
