@@ -1,5 +1,6 @@
 ﻿using Azure.Core;
 using BCrypt.Net;
+using GameDBWebApi.Constants;
 using GameDBWebApi.DTOs.Auth;
 using GameDBWebApi.Entites;
 using GameDBWebApi.Exceptions;
@@ -31,7 +32,7 @@ namespace GameDBWebApi.Services
             if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.HashPassword))
             {
                 _logger.LogWarning("Invalid credentials for user: {Usermail}", request.UserMail);
-                throw new UnauthorizedAccessException("Invalid username or password.");
+                throw new UnauthorizedAccessException(ErrorMessages.Auth.InvalidCredentials);
             }
 
             string accessToken = GenerateJwtToken(user);
@@ -49,7 +50,7 @@ namespace GameDBWebApi.Services
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
-                Message = "Login successful."
+                Message = ErrorMessages.Auth.LoginSuccessful
             };
         }
 
@@ -61,7 +62,7 @@ namespace GameDBWebApi.Services
 
             if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
             {
-                throw new UnauthorizedAccessException("Invalid or expired refresh token.");
+                throw new UnauthorizedAccessException(ErrorMessages.Auth.InvalidOrExpiredRefreshToken);
             }
 
             // Generate new tokens (Token Rotation)
@@ -80,7 +81,7 @@ namespace GameDBWebApi.Services
             {
                 AccessToken = newAccessToken,
                 RefreshToken = newRefreshToken,
-                Message = "Token refreshed successfully."
+                Message = ErrorMessages.Auth.TokenRefreshedSuccessfully
             };
         }
         public async Task RegisterAsync(RegisterRequestDto request)
@@ -90,12 +91,12 @@ namespace GameDBWebApi.Services
            
             if (await _unitOfWork.Users.EmailExistsAsync(request.Email))
             {
-                throw new ConflictException("Email already exists.");
+                throw new ConflictException(ErrorMessages.Auth.EmailAlreadyExists);
             }
 
             if (await _unitOfWork.Users.UserNameExistsAsync(request.UserName))
             {
-                throw new ConflictException("Username is already taken."); // 409 Conflict (veya BadRequestException)
+                throw new ConflictException(ErrorMessages.Auth.UsernameAlreadyTaken); // 409 Conflict (veya BadRequestException)
             }
 
             var newUser = new User
@@ -132,7 +133,7 @@ namespace GameDBWebApi.Services
         {
             // Read the secret key from appsettings.json
             var jwtSettings = _configuration.GetSection("JwtSettings");
-            var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is not configured."); ;
+            var secretKey = jwtSettings["SecretKey"];
 
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);

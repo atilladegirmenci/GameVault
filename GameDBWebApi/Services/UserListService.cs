@@ -1,4 +1,5 @@
-﻿using GameDBWebApi.DTOs.List;
+﻿using GameDBWebApi.Constants;
+using GameDBWebApi.DTOs.List;
 using GameDBWebApi.Entites;
 using GameDBWebApi.Exceptions;
 using GameDBWebApi.Repositories;
@@ -49,7 +50,7 @@ namespace GameDBWebApi.Services
         {
             if (string.IsNullOrWhiteSpace(request.ListTitle))
             {
-                throw new BadRequestException("List title cannot be null or empty.");
+                throw new BadRequestException(ErrorMessages.UserList.ListTitleCannotBeNullOrEmpty);
             }
 
             var userList = await GetOwnedListAsync(userId, listId);
@@ -73,7 +74,7 @@ namespace GameDBWebApi.Services
             var userList = await _unitOfWork.UserLists.GetByIdAsync(listId);
 
             if (userList is null)
-                throw new NotFoundException("User list not found.");
+                throw new NotFoundException(ErrorMessages.UserList.UserListNotFound);
 
             var listGames = await _unitOfWork.UserLists.GetGamesByListIdAsync(listId);
 
@@ -92,7 +93,7 @@ namespace GameDBWebApi.Services
             var user = await _unitOfWork.Users.GetByIdAsync(userId);
 
             if (user is null)
-                throw new NotFoundException("User not found.");
+                throw new NotFoundException(ErrorMessages.User.UserNotFound);
 
             var userLists = await _unitOfWork.UserLists.GetByUserIdAsync(userId);
 
@@ -109,7 +110,7 @@ namespace GameDBWebApi.Services
         public async Task AddGameAsync(int userId, int listId, int rawgId)
         {
             if (rawgId <= 0)
-                throw new BadRequestException("Invalid RAWG game ID.");
+                throw new BadRequestException(ErrorMessages.Game.RawgGameIdMustBePositive);
 
             var userList = await GetOwnedListAsync(userId, listId);
 
@@ -117,14 +118,14 @@ namespace GameDBWebApi.Services
                 .ContainsGameByRawgIdAsync(listId, rawgId);
 
             if (alreadyExists)
-                throw new ConflictException("This game is already in the list.");
+                throw new ConflictException(ErrorMessages.UserList.GameAlreadyInList);
 
             var gameCount = await _unitOfWork.UserLists
                 .GetGameCountByListIdAsync(listId);
 
             if (gameCount >= MaxGamesPerList)
                 throw new BadRequestException(
-                    $"A list cannot contain more than {MaxGamesPerList} games.");
+                    string.Format(ErrorMessages.UserList.ListMaxGamesTemplate, MaxGamesPerList));
 
             var game = await _unitOfWork.Games.GetByRawgIdAsync(rawgId);
 
@@ -133,7 +134,7 @@ namespace GameDBWebApi.Services
                 var rawgGame = await _rawgApiService.GetGameDetailsByRawgIdAsync(rawgId);
 
                 if (rawgGame is null)
-                    throw new NotFoundException("Game not found on RAWG.");
+                    throw new NotFoundException(ErrorMessages.External.GameNotFoundOnRawg);
 
                 game = new Game
                 {
@@ -161,7 +162,7 @@ namespace GameDBWebApi.Services
                 .ContainsGameAsync(listId, gameId);
 
             if (!gameExists)
-                throw new NotFoundException("Game not found in this list.");
+                throw new NotFoundException(ErrorMessages.UserList.GameNotFoundInList);
 
             await _unitOfWork.UserLists.RemoveGameAsync(listId, gameId);
 
@@ -175,10 +176,10 @@ namespace GameDBWebApi.Services
             var userList = await _unitOfWork.UserLists.GetByIdAsync(listId);
 
             if (userList is null)
-                throw new NotFoundException("User list not found.");
+                throw new NotFoundException(ErrorMessages.UserList.UserListNotFound);
 
             if (userList.UserId != userId)
-                throw new ForbiddenException("You do not have permission to access this list.");
+                throw new ForbiddenException(ErrorMessages.UserList.NoPermissionForList);
 
             return userList;
         }

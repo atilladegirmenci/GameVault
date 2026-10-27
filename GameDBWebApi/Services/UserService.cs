@@ -1,4 +1,5 @@
-﻿using GameDBWebApi.Entites;
+﻿using GameDBWebApi.Constants;
+using GameDBWebApi.Entites;
 using GameDBWebApi.Repositories;
 using GameDBWebApi.DTOs.User;
 using GameDBWebApi.Exceptions;
@@ -24,7 +25,7 @@ namespace GameDBWebApi.Services
             if (user == null)
             {
                 _logger.LogWarning("User with ID {UserId} not found.", id);
-                throw new NotFoundException("User not found.");
+                throw new NotFoundException(ErrorMessages.User.UserNotFound);
             }
 
             // fetch user's games (first page, limited size)
@@ -58,7 +59,7 @@ namespace GameDBWebApi.Services
             if (existingUser == null)
             {
                 _logger.LogWarning("Update operation for user with ID {UserId} failed. User was not found.", id);
-                throw new NotFoundException("User not found.");
+                throw new NotFoundException(ErrorMessages.User.UserNotFound);
             }
 
             if (existingUser.UserEmail != request.Email)
@@ -67,7 +68,7 @@ namespace GameDBWebApi.Services
                 if (emailExists)
                 {
                     _logger.LogWarning("Update operation for user with ID {UserId} failed. Email {Email} already exists.", id, request.Email);
-                    throw new ConflictException("Email already exists.");
+                    throw new ConflictException(ErrorMessages.Auth.EmailAlreadyExists);
                 }
             }
 
@@ -88,7 +89,7 @@ namespace GameDBWebApi.Services
             if (user == null)
             {
                 _logger.LogWarning("delete operation for user with ID {UserId} failed. User was not found.", id);
-                throw new NotFoundException("User not found.");
+                throw new NotFoundException(ErrorMessages.User.UserNotFound);
             }
 
             await _unitOfWork.Users.DeleteAsync(user);

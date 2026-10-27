@@ -1,4 +1,5 @@
-﻿using GameDBWebApi.Entites;
+﻿using GameDBWebApi.Constants;
+using GameDBWebApi.Entites;
 using GameDBWebApi.Exceptions;
 using GameDBWebApi.Repositories;
 using GameDBWebApi.DTOs.Review;
@@ -30,7 +31,7 @@ namespace GameDBWebApi.Services
             if (rawgId <= 0)
             {
                 throw new BadRequestException(
-                    "RAWG game ID must be greater than zero.");
+                    ErrorMessages.Review.RawgIdMustBeGreaterThanZero);
             }
 
             var game = await GetOrCreateGameAsync(rawgId);
@@ -41,7 +42,7 @@ namespace GameDBWebApi.Services
             if (alreadyReviewed)
             {
                 throw new ConflictException(
-                    "You have already reviewed this game.");
+                    ErrorMessages.Review.AlreadyReviewed);
             }
 
             var review = new Review
@@ -77,13 +78,13 @@ namespace GameDBWebApi.Services
             if (review == null)
             {
                 throw new NotFoundException(
-                    $"Review with ID {reviewId} was not found.");
+                    string.Format(ErrorMessages.Review.ReviewNotFoundTemplate, reviewId));
             }
 
             if (review.UserId != userId)
             {
                 throw new ForbiddenException(
-                    "You are not allowed to delete this review.");
+                    ErrorMessages.Review.DeleteNotAllowed);
             }
 
             _unitOfWork.Reviews.Delete(review);
@@ -105,7 +106,7 @@ namespace GameDBWebApi.Services
             if (RawgId <= 0)
             {
                 throw new BadRequestException(
-                    "RAWG game ID must be greater than zero.");
+                    ErrorMessages.Review.RawgIdMustBeGreaterThanZero);
             }
 
             var game = await GetOrCreateGameAsync(RawgId);
@@ -180,7 +181,7 @@ namespace GameDBWebApi.Services
             if (rawGameData == null)
             {
                 throw new NotFoundException(
-                    $"Game with RAWG ID {rawgId} was not found.");
+                    string.Format(ErrorMessages.External.RawgGameNotFoundTemplate, rawgId));
             }
 
             game = new Game
@@ -203,13 +204,13 @@ namespace GameDBWebApi.Services
             if (page < 1)
             {
                 throw new BadRequestException(
-                    "Page must be greater than or equal to 1.");
+                    ErrorMessages.Review.PageMustBeGreaterThanOrEqualToOne);
             }
 
             if (pageSize < 1 || pageSize > 100)
             {
                 throw new BadRequestException(
-                    "Page size must be between 1 and 100.");
+                    ErrorMessages.Review.PageSizeRange);
             }
         }
       
