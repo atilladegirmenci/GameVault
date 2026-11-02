@@ -9,6 +9,8 @@ using GameDBWebApi.DTOs.Auth;
 using GameDBWebApi.Entites;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using GameDBWebApi.Configuration;
 using System.Collections.Generic;
 
 namespace GameDBWebApi.Tests
@@ -17,6 +19,8 @@ namespace GameDBWebApi.Tests
     {
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
         private readonly Mock<IUserRepository> _mockUserRepository;
+        private readonly Mock<IEmailVerificationTokenRepository> _mockTokenRepository;
+        private readonly Mock<IEmailService> _mockEmailService;
         private readonly Mock<ILogger<AuthService>> _mockLogger;
         private readonly AuthService _authService;
         private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration;
@@ -25,9 +29,12 @@ namespace GameDBWebApi.Tests
         {
             _mockUnitOfWork = new Mock<IUnitOfWork>();
             _mockUserRepository = new Mock<IUserRepository>();
+            _mockTokenRepository = new Mock<IEmailVerificationTokenRepository>();
+            _mockEmailService = new Mock<IEmailService>();
             _mockLogger = new Mock<ILogger<AuthService>>();
 
             _mockUnitOfWork.Setup(uow => uow.Users).Returns(_mockUserRepository.Object);
+            _mockUnitOfWork.Setup(uow => uow.EmailVerificationTokens).Returns(_mockTokenRepository.Object);
 
             var inMemorySettings = new Dictionary<string, string>
             {
@@ -39,7 +46,16 @@ namespace GameDBWebApi.Tests
                 .AddInMemoryCollection(inMemorySettings)
                 .Build();
 
-            _authService = new AuthService(_mockUnitOfWork.Object, _configuration, _mockLogger.Object);
+            _authService = new AuthService(
+                _mockUnitOfWork.Object,
+                _configuration,
+                _mockLogger.Object,
+                _mockEmailService.Object,
+                Options.Create(new EmailSettings
+                {
+                    VerificationUrl = "https://localhost/verify",
+                    VerificationTokenLifetimeMinutes = 60
+                }));
         }
 
         [Fact]
@@ -60,7 +76,13 @@ namespace GameDBWebApi.Tests
             // Assert
             await act.Should().NotThrowAsync();
             _mockUserRepository.Verify(repo => repo.AddAsync(It.Is<User>(u => u.UserEmail == registerRequest.Email)), Times.Once);
-            _mockUnitOfWork.Verify(uow => uow.CompleteAsync(), Times.Once);
+            _mockUnitOfWork.Verify(uow => uow.CompleteAsync(), Times.Exactly(2));
+            _mockEmailService.Verify(
+                service => service.SendVerificationEmailAsync(
+                    registerRequest.Email,
+                    It.IsAny<string>(),
+                    It.IsAny<string>()),
+                Times.Once);
         }
 
         [Fact]
@@ -96,7 +118,9 @@ namespace GameDBWebApi.Tests
             var user = new User
             {
                 Id = 1,
+                UserName = "testuser",
                 UserEmail = loginRequest.UserMail,
+                EmailConfirmed = true,
                 HashPassword = BCrypt.Net.BCrypt.HashPassword(loginRequest.Password)
             };
             _mockUserRepository.Setup(repo => repo.GetByUserMailAsync(loginRequest.UserMail)).ReturnsAsync(user);
@@ -123,6 +147,7 @@ namespace GameDBWebApi.Tests
             {
                 Id = 1,
                 UserEmail = loginRequest.UserMail,
+                EmailConfirmed = true,
                 HashPassword = BCrypt.Net.BCrypt.HashPassword("CorrectPassword123!")
             };
 
@@ -130,7 +155,7 @@ namespace GameDBWebApi.Tests
 
             // Act & Assert
             var act = async () => await _authService.LoginAsync(loginRequest);
-            await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("Invalid email or password.");
+            await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("Invalid username or password.");
         }
 
         [Fact]
@@ -149,7 +174,33 @@ namespace GameDBWebApi.Tests
             var act = async () => await _authService.LoginAsync(loginRequest);
 
             // Assert
-            await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("Invalid email or password.");
+            await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("Invalid username or password.");
+        }
+
+        [Fact]
+        public async Task LoginAsync_UnconfirmedEmail_ThrowsUnauthorizedAccessException()
+        {
+            var loginRequest = new LoginRequestDto
+            {
+                UserMail = "unverified@example.com",
+                Password = "TestPassword123!"
+            };
+            var user = new User
+            {
+                Id = 1,
+                UserName = "unverified-user",
+                UserEmail = loginRequest.UserMail,
+                HashPassword = BCrypt.Net.BCrypt.HashPassword(loginRequest.Password),
+                EmailConfirmed = false
+            };
+
+            _mockUserRepository.Setup(repo => repo.GetByUserMailAsync(loginRequest.UserMail)).ReturnsAsync(user);
+
+            var act = async () => await _authService.LoginAsync(loginRequest);
+
+            await act.Should().ThrowAsync<UnauthorizedAccessException>()
+                .WithMessage("Email address has not been verified.");
+            _mockUnitOfWork.Verify(uow => uow.CompleteAsync(), Times.Never);
         }
 
         //[Fact]

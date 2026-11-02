@@ -1,0 +1,54 @@
+using GameDBWebApi.Configuration;
+using GameDBWebApi.Exceptions;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using Microsoft.Extensions.Options;
+using MimeKit;
+
+namespace GameDBWebApi.Services;
+
+public sealed class MailKitEmailService : IEmailService
+{
+    private readonly EmailSettings _settings;
+    private readonly ILogger<MailKitEmailService> _logger;
+
+    public MailKitEmailService(
+        IOptions<EmailSettings> options,
+        ILogger<MailKitEmailService> logger)
+    {
+        _settings = options.Value;
+        _logger = logger;
+    }
+
+    public async Task SendVerificationEmailAsync(
+        string recipientEmail,
+        string recipientName,
+        string verificationUrl)
+    {
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(_settings.FromName, _settings.FromAddress));
+        message.To.Add(new MailboxAddress(recipientName, recipientEmail));
+        message.Subject = "Verify your GameVault email address";
+        message.Body = new TextPart("plain")
+        {
+            Text = $"Hello {recipientName},\n\nVerify your email address by opening this link:\n{verificationUrl}\n\nThis link will expire soon."
+        };
+
+        try
+        {
+            using var client = new SmtpClient();
+            await client.ConnectAsync(
+                _settings.SmtpHost,
+                _settings.SmtpPort,
+                _settings.EnableSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto);
+            await client.AuthenticateAsync(_settings.Username, _settings.Password);
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send verification email to {Email}", recipientEmail);
+            throw new ExternalServiceException("Unable to send the verification email.");
+        }
+    }
+}

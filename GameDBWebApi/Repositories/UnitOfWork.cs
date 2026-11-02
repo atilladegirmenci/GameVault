@@ -11,6 +11,7 @@ namespace GameDBWebApi.Repositories
         public IUserGameRepository UserGames { get; private set; }
         public IReviewRepository Reviews { get; private set; }
         public IUserListRepository UserLists { get; private set; }
+        public IEmailVerificationTokenRepository EmailVerificationTokens { get; private set; }
 
         public UnitOfWork(AppDbContext context)
         {
@@ -20,6 +21,7 @@ namespace GameDBWebApi.Repositories
             UserGames = new UserGameRepository(_context);
             Reviews = new ReviewRepository(_context);
             UserLists = new UserListRepository(_context);
+            EmailVerificationTokens = new EmailVerificationTokenRepository(_context);
         }
 
         public async Task<int> CompleteAsync()

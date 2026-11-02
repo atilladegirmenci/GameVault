@@ -10,5 +10,7 @@ namespace GameDBWebApi.Services
         Task RegisterAsync(RegisterRequestDto request);
 
         Task LogoutAsync(int userId);
+        Task ResendVerificationEmailAsync(string email);
+        Task VerifyEmailAsync(string token);
     }
 }

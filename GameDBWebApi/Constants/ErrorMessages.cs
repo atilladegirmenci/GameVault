@@ -22,6 +22,8 @@ namespace GameDBWebApi.Constants
             public const string UsernameAlreadyTaken = "Username is already taken.";
             public const string JwtSecretKeyMissing = "JWT Secret Key is missing!";
             public const string JwtSecretKeyNotConfigured = "JWT SecretKey is not configured.";
+            public const string EmailNotConfirmed = "Email address has not been verified.";
+            public const string InvalidOrExpiredEmailVerificationToken = "Invalid or expired email verification token.";
         }
 
         public static class User

@@ -1,0 +1,22 @@
+@baseUrl = https://localhost:7091
+
+### Register - sends a verification email automatically
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "userName": "verification-user",
+  "email": "verification-user@example.com",
+  "password": "Password123"
+}
+
+### Resend verification email
+POST {{baseUrl}}/api/auth/resend-verification
+Content-Type: application/json
+
+{
+  "email": "verification-user@example.com"
+}
+
+### Verify email using the token from the email
+GET {{baseUrl}}/api/auth/verify-email?token=PASTE_TOKEN_HERE

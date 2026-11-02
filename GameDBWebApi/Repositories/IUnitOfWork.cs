@@ -7,6 +7,7 @@
         IUserGameRepository UserGames { get; }
         IReviewRepository Reviews { get; }
         IUserListRepository UserLists { get; }
+        IEmailVerificationTokenRepository EmailVerificationTokens { get; }
         Task<int> CompleteAsync();
     }
 }
