@@ -38,6 +38,22 @@ namespace GameDBWebApi.Controllers
         }
 
         [AllowAnonymous]
+        [HttpPost("resend-verification")]
+        public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationRequestDto request)
+        {
+            await _authService.ResendVerificationEmailAsync(request.Email);
+            return Ok(new { message = "If the account exists and is unverified, a verification email has been sent." });
+        }
+
+        [AllowAnonymous]
+        [HttpGet("verify-email")]
+        public async Task<IActionResult> VerifyEmail([FromQuery] string token)
+        {
+            await _authService.VerifyEmailAsync(token);
+            return Ok(new { message = "Email verified successfully." });
+        }
+
+        [AllowAnonymous]
         [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto request)
         {

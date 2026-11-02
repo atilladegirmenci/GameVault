@@ -23,6 +23,11 @@ namespace GameDBWebApi.Entites
         public string UserEmail { get; set; }
 
         /// <summary>
+        /// Indicates whether the user has verified their email address.
+        /// </summary>
+        public bool EmailConfirmed { get; set; }
+
+        /// <summary>
         /// BCrypt hashed password for authentication.
         /// </summary>
         public string HashPassword { get; set; }

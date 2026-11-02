@@ -68,6 +68,7 @@ namespace GameDBWebApi.Data
         public DbSet<UserList> UserLists { get; set; }
         public DbSet<UserListGame> UserListGames { get; set; }
         public DbSet<Review> Reviews { get; set; }
+        public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -87,6 +88,7 @@ namespace GameDBWebApi.Data
                 // Email must be unique and required
                 entity.Property(u => u.UserEmail).IsRequired().HasMaxLength(100);
                 entity.HasIndex(u => u.UserEmail).IsUnique();
+                entity.Property(u => u.EmailConfirmed).IsRequired().HasDefaultValue(false);
 
                 // Timestamps: ensure non-nullable at the database level and provide a SQL default
                 entity.Property(u => u.CreatedAt)
@@ -96,6 +98,22 @@ namespace GameDBWebApi.Data
                 entity.Property(u => u.UpdatedAt)
                       .IsRequired()
                       .HasDefaultValueSql("GETUTCDATE()");
+            });
+
+            modelBuilder.Entity<EmailVerificationToken>(entity =>
+            {
+                entity.ToTable("EmailVerificationTokens");
+                entity.HasKey(token => token.Id);
+                entity.Property(token => token.TokenHash).IsRequired().HasMaxLength(64);
+                entity.HasIndex(token => token.TokenHash).IsUnique();
+                entity.Property(token => token.ExpiresAtUtc).IsRequired();
+                entity.Property(token => token.CreatedAt)
+                    .IsRequired()
+                    .HasDefaultValueSql("GETUTCDATE()");
+                entity.HasOne(token => token.User)
+                    .WithMany()
+                    .HasForeignKey(token => token.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             // 2. GAME CONFIGURATION

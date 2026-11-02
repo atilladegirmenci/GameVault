@@ -10,6 +10,10 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using GameDBWebApi.Configuration;
+using System.Text.Encodings.Web;
+using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace GameDBWebApi.Services
 {
@@ -18,11 +22,20 @@ namespace GameDBWebApi.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthService> _logger;
-        public AuthService(IUnitOfWork unitOfWork, IConfiguration configuration, ILogger<AuthService> logger)
+        private readonly IEmailService _emailService;
+        private readonly EmailSettings _emailSettings;
+        public AuthService(
+            IUnitOfWork unitOfWork,
+            IConfiguration configuration,
+            ILogger<AuthService> logger,
+            IEmailService emailService,
+            IOptions<EmailSettings> emailOptions)
         {
             _unitOfWork = unitOfWork;
             _configuration = configuration;
             _logger = logger;
+            _emailService = emailService;
+            _emailSettings = emailOptions.Value;
         }
         public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
         {
@@ -32,7 +45,12 @@ namespace GameDBWebApi.Services
             if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.HashPassword))
             {
                 _logger.LogWarning("Invalid credentials for user: {Usermail}", request.UserMail);
-                throw new UnauthorizedAccessException(ErrorMessages.Auth.InvalidCredentials);
+                throw new UnauthorizedException(ErrorMessages.Auth.InvalidCredentials);
+            }
+
+            if (!user.EmailConfirmed)
+            {
+                throw new UnauthorizedException(ErrorMessages.Auth.EmailNotConfirmed);
             }
 
             string accessToken = GenerateJwtToken(user);
@@ -62,7 +80,12 @@ namespace GameDBWebApi.Services
 
             if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
             {
-                throw new UnauthorizedAccessException(ErrorMessages.Auth.InvalidOrExpiredRefreshToken);
+                throw new UnauthorizedException(ErrorMessages.Auth.InvalidOrExpiredRefreshToken);
+            }
+
+            if (!user.EmailConfirmed)
+            {
+                throw new UnauthorizedException(ErrorMessages.Auth.EmailNotConfirmed);
             }
 
             // Generate new tokens (Token Rotation)
@@ -103,15 +126,77 @@ namespace GameDBWebApi.Services
             {
                 UserName = request.UserName,
                 HashPassword = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                UserEmail = request.Email
+                UserEmail = request.Email,
+                EmailConfirmed = false
 
             };
 
             await _unitOfWork.Users.AddAsync(newUser);
             await _unitOfWork.CompleteAsync(); 
+            await SendVerificationEmailAsync(newUser);
 
             _logger.LogInformation("User {Username} registered successfully.", request.UserName);
 
+        }
+
+        public async Task ResendVerificationEmailAsync(string email)
+        {
+            var user = await _unitOfWork.Users.GetByUserMailAsync(email);
+            if (user == null)
+            {
+                return;
+            }
+
+            if (user.EmailConfirmed)
+            {
+                return;
+            }
+
+            await SendVerificationEmailAsync(user);
+        }
+
+        public async Task VerifyEmailAsync(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                throw new BadRequestException(ErrorMessages.Auth.InvalidOrExpiredEmailVerificationToken);
+            }
+
+            var tokenHash = ComputeTokenFingerprint(token);
+            var verificationToken = await _unitOfWork.EmailVerificationTokens.GetByHashAsync(tokenHash);
+
+            if (verificationToken == null ||
+                verificationToken.UsedAtUtc.HasValue ||
+                verificationToken.ExpiresAtUtc <= DateTime.UtcNow)
+            {
+                throw new BadRequestException(ErrorMessages.Auth.InvalidOrExpiredEmailVerificationToken);
+            }
+
+            verificationToken.UsedAtUtc = DateTime.UtcNow;
+            verificationToken.User.EmailConfirmed = true;
+            await _unitOfWork.CompleteAsync();
+        }
+
+        private async Task SendVerificationEmailAsync(User user)
+        {
+            _logger.LogInformation("attempting to send verification email to user: {UserEmail}", user.UserEmail);
+            var rawToken = WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
+            await _unitOfWork.EmailVerificationTokens.InvalidateActiveTokensAsync(user.Id);
+            var token = new EmailVerificationToken
+            {
+                UserId = user.Id,
+                TokenHash = ComputeTokenFingerprint(rawToken),
+                ExpiresAtUtc = DateTime.UtcNow.AddMinutes(_emailSettings.VerificationTokenLifetimeMinutes)
+            };
+
+            await _unitOfWork.EmailVerificationTokens.AddAsync(token);
+            await _unitOfWork.CompleteAsync();
+
+            var verificationUrl = QueryHelpers.AddQueryString(
+                _emailSettings.VerificationUrl,
+                "token",
+                rawToken);
+            await _emailService.SendVerificationEmailAsync(user.UserEmail, user.UserName, verificationUrl);
         }
       
         public async Task LogoutAsync(int userId)

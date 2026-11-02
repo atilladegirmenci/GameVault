@@ -10,6 +10,7 @@ I'm open to **contributions, suggestions, feedback, and collaboration**. Whether
 
 ### 🔐 Authentication and User Management
 - User registration and login with JWT-based authentication.
+- Email verification with time-limited, single-use verification links.
 - Password hashing using BCrypt.
 - Refresh token management with hashed token storage.
 - User account management.
@@ -116,8 +117,17 @@ Required settings include:
 - `JwtSettings:Issuer`
 - `JwtSettings:Audience`
 - Your RAWG API key, using the configuration key expected by the application.
+- `EmailSettings:SmtpHost`
+- `EmailSettings:SmtpPort`
+- `EmailSettings:Username`
+- `EmailSettings:Password`
+- `EmailSettings:FromAddress`
+- `EmailSettings:FromName`
+- `EmailSettings:VerificationUrl`
+- `EmailSettings:VerificationTokenLifetimeMinutes`
 
-**Do not commit real API keys, JWT secrets, passwords, or other credentials to source control.**
+Configure SMTP credentials with User Secrets, environment variables, or a managed secret store.
+**Do not commit real API keys, JWT secrets, SMTP passwords, or other credentials to source control.**
 
 ### 3. Apply database migrations
 

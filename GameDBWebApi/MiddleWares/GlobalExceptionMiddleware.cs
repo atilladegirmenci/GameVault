@@ -41,7 +41,7 @@ namespace GameDBWebApi.MiddleWares
                     (businessEx.StatusCode, businessEx.Message),
 
                 UnauthorizedAccessException => 
-                    (StatusCodes.Status401Unauthorized, "Unauthorized access."),
+                    (StatusCodes.Status401Unauthorized, "Unauthorized access. if i see this, this needs to be updated. we use custom UnauthorizedException instead."),
 
                 _ => 
                     (StatusCodes.Status500InternalServerError, 

@@ -11,6 +11,7 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using GameDBWebApi.Constants;
 using Microsoft.VisualBasic;
+using GameDBWebApi.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -63,6 +64,17 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services
+    .AddOptions<EmailSettings>()
+    .Bind(builder.Configuration.GetSection(EmailSettings.SectionName))
+    .Validate(settings => !string.IsNullOrWhiteSpace(settings.SmtpHost), "EmailSettings:SmtpHost is required.")
+    .Validate(settings => !string.IsNullOrWhiteSpace(settings.Username), "EmailSettings:Username is required.")
+    .Validate(settings => !string.IsNullOrWhiteSpace(settings.Password), "EmailSettings:Password is required.")
+    .Validate(settings => !string.IsNullOrWhiteSpace(settings.FromAddress), "EmailSettings:FromAddress is required.")
+    .Validate(settings => !string.IsNullOrWhiteSpace(settings.VerificationUrl), "EmailSettings:VerificationUrl is required.")
+    .Validate(settings => settings.VerificationTokenLifetimeMinutes > 0, "EmailSettings:VerificationTokenLifetimeMinutes must be greater than zero.")
+    .ValidateOnStart();
+
 builder.Host.UseSerilog((context, configuration) =>
 {
     configuration.ReadFrom.Configuration(context.Configuration);
@@ -104,6 +116,7 @@ builder.Services.AddSwaggerGen(c =>
 //builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IEmailService, MailKitEmailService>();
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services.AddHttpClient<IRawgApiService, RawgApiService>();
 builder.Services.AddScoped<IUserService, UserService>();
