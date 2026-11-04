@@ -12,6 +12,9 @@ using FluentValidation.AspNetCore;
 using GameDBWebApi.Constants;
 using Microsoft.VisualBasic;
 using GameDBWebApi.Configuration;
+using Polly;
+using Polly.CircuitBreaker;
+using Polly.Timeout;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -118,7 +121,25 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, MailKitEmailService>();
 builder.Services.AddScoped<IGameService, GameService>();
-builder.Services.AddHttpClient<IRawgApiService, RawgApiService>();
+builder.Services
+    .AddHttpClient<IGameCatalogService, RawgApiService>(client =>
+    {
+        client.BaseAddress = new Uri("https://api.rawg.io/");
+    })
+    .AddStandardResilienceHandler(options =>
+    {
+        options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(30);
+        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(10);
+        options.Retry.MaxRetryAttempts = 3;
+        options.Retry.Delay = TimeSpan.FromMilliseconds(200);
+        options.Retry.BackoffType = DelayBackoffType.Exponential;
+        options.Retry.UseJitter = true;
+
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
+        options.CircuitBreaker.FailureRatio = 0.5;
+        options.CircuitBreaker.MinimumThroughput = 5;
+        options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
+    });
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IUserListService, UserListService>();
@@ -128,7 +149,7 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-   // app.MapOpenApi();
+    // app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI();
 }

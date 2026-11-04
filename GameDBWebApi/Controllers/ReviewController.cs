@@ -24,7 +24,8 @@ namespace GameDBWebApi.Controllers
         public async Task<IActionResult> GetGameReviews(
             [FromRoute] int rawgId,
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10)
+            [FromQuery] int pageSize = 10,
+            CancellationToken cancellationToken = default)
         {
             if (rawgId <= 0)
             {
@@ -44,7 +45,7 @@ namespace GameDBWebApi.Controllers
                 pageSize = 40;
 
             var reviews = await _reviewService.GetGameReviewsAsync(
-                rawgId, page, pageSize);
+                rawgId, page, pageSize, cancellationToken);
 
             return Ok(reviews);
         }
@@ -81,14 +82,16 @@ namespace GameDBWebApi.Controllers
         [HttpPost("game/{rawgId:int}")]
         public async Task<IActionResult> CreateReview(
             [FromRoute] int rawgId,
-            [FromBody] CreateReviewRequestDto request)
+            [FromBody] CreateReviewRequestDto request,
+            CancellationToken cancellationToken)
         {
             var currentUserId = GetCurrentUserId();
 
             var createdReview = await _reviewService.CreateReviewAsync(
                 currentUserId,
                 rawgId,
-                request);
+                request,
+                cancellationToken);
 
             return CreatedAtAction(
                 nameof(GetReviewById),

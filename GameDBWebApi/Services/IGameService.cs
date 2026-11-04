@@ -6,8 +6,22 @@ using GameDBWebApi.Entites;
 
 public interface IGameService
 {
-    Task UpsertGameStatusAsync(int userİd, UpsertGameStatusDto request);
-    Task<GameDetailsResponseDto> GetGameDetailsAsync(int? userId, int rawgId);
-    Task<PaginatedList<GameCardDto>> GetGameFeedAsync(int? userId, int page, int pageSize, string ordering);
-    Task<PaginatedList<GameCardDto>> GetUserGamesAsync(int userId, int page, int pageSize);
+    Task UpsertGameStatusAsync(int userİd, UpsertGameStatusDto request, CancellationToken cancellationToken);
+    Task<GameDetailsResponseDto> GetGameDetailsAsync(int? userId, int rawgId, CancellationToken cancellationToken);
+    Task<PaginatedList<GameCardDto>> GetGameFeedAsync(
+        int? userId,
+        int page,
+        int pageSize,
+        string ordering,
+        CancellationToken cancellationToken);
+    Task<PaginatedFeedResponse> SearchGamesAsync(
+        int page,
+        int pageSize,
+        string keyword,
+        CancellationToken cancellationToken);
+    Task<PaginatedList<GameCardDto>> GetUserGamesAsync(
+        int userId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken);
 }

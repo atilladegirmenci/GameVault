@@ -71,6 +71,9 @@ namespace GameDBWebApi.Constants
             public const string FailedToDeserializeGameDetailsTemplate = "Failed to deserialize game details";
             public const string GameNotFoundOnRawg = "Game not found on RAWG.";
             public const string RawgGameNotFoundTemplate = "Game not found.";
+            public const string RawgServiceTemporarilyUnavailable = "The RAWG service is temporarily unavailable. Please try again later.";
+            public const string RawgServiceTimeout = "The RAWG service did not respond in time. Please try again later.";
+            public const string RawgServiceUnreachable = "The RAWG service could not be reached. Please try again later.";
         }
     }
 }

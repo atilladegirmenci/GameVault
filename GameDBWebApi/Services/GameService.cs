@@ -9,25 +9,28 @@ namespace GameDBWebApi.Services
     public class GameService : IGameService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IRawgApiService _rawgApiService;
+        private readonly IGameCatalogService _rawgApiService;
         private readonly ILogger<GameService> _logger;
 
-        public GameService(IUnitOfWork unitOfWork, IRawgApiService rawgApiService, ILogger<GameService> logger)
+        public GameService(IUnitOfWork unitOfWork, IGameCatalogService rawgApiService, ILogger<GameService> logger)
         {
             _unitOfWork = unitOfWork;
             _rawgApiService = rawgApiService;
             _logger = logger;
         }
 
-        public async Task UpsertGameStatusAsync(int userId, UpsertGameStatusDto request)
+        public async Task UpsertGameStatusAsync(
+            int userId,
+            UpsertGameStatusDto request,
+            CancellationToken cancellationToken)
         {
             var game = await _unitOfWork.Games.GetByRawgIdAsync(request.RawgId);
 
-            if(game == null)
+            if (game == null)
             {
                 _logger.LogInformation("Game with RawgId {RawgId} not found in local database. Fetching from RAWG API and saving to db", request.RawgId);
 
-                var rawGameData = await _rawgApiService.GetGameByRawgIdAsync(request.RawgId);
+                var rawGameData = await _rawgApiService.GetGameByRawgIdAsync(request.RawgId, cancellationToken);
 
                 game = new Game
                 {
@@ -43,8 +46,8 @@ namespace GameDBWebApi.Services
             }
 
             var userGame = await _unitOfWork.UserGames.GetByUserIDAndGameIdAsync(userId, game.Id);
-           _logger.LogInformation("Upserting game for user {userId} and game {gameId}.", userId, game.Id);
-           
+            _logger.LogInformation("Upserting game for user {userId} and game {gameId}.", userId, game.Id);
+
             if (userGame == null)
             {
                 userGame = new UserGame
@@ -55,7 +58,7 @@ namespace GameDBWebApi.Services
                     UpdatedDate = DateTime.UtcNow
 
                 };
-                
+
                 await _unitOfWork.UserGames.AddAsync(userGame);
             }
             else
@@ -68,9 +71,12 @@ namespace GameDBWebApi.Services
             await _unitOfWork.CompleteAsync();
         }
 
-        public async Task<GameDetailsResponseDto> GetGameDetailsAsync(int? userId, int rawgId)
+        public async Task<GameDetailsResponseDto> GetGameDetailsAsync(
+            int? userId,
+            int rawgId,
+            CancellationToken cancellationToken)
         {
-            var gameDetails = await _rawgApiService.GetGameDetailsByRawgIdAsync(rawgId);
+            var gameDetails = await _rawgApiService.GetGameDetailsByRawgIdAsync(rawgId, cancellationToken);
 
             if (userId == null)
             {
@@ -79,11 +85,11 @@ namespace GameDBWebApi.Services
 
             var gameInDb = await _unitOfWork.Games.GetByRawgIdAsync(rawgId);
 
-            if(gameInDb != null)
+            if (gameInDb != null)
             {
                 var userGame = await _unitOfWork.UserGames.GetByUserIDAndGameIdAsync(userId.Value, gameInDb.Id);
-                
-                if(userGame != null)
+
+                if (userGame != null)
                 {
                     _logger.LogInformation("Game with RawgId {RawgId} is in user {userId}'s library with status {status}.", rawgId, userId, userGame.Status);
                     gameDetails.IsInMyLibrary = true;
@@ -93,7 +99,11 @@ namespace GameDBWebApi.Services
 
             return gameDetails;
         }
-        public async Task<PaginatedList<GameCardDto>> GetUserGamesAsync(int userId, int page, int pageSize)
+        public async Task<PaginatedList<GameCardDto>> GetUserGamesAsync(
+            int userId,
+            int page,
+            int pageSize,
+            CancellationToken cancellationToken)
         {
             var userGames = await _unitOfWork.UserGames.GetByUserIdAsync(userId, page, pageSize);
 
@@ -102,7 +112,7 @@ namespace GameDBWebApi.Services
                 _logger.LogInformation("No games found for user {userId}.", userId);
                 return new PaginatedList<GameCardDto>(new List<GameCardDto>(), 0, page, pageSize);
             }
-            
+
             var gameCardDtos = userGames.Select(ug => new GameCardDto
             {
                 RawgId = ug.Game.RawgId,
@@ -117,10 +127,20 @@ namespace GameDBWebApi.Services
             return new PaginatedList<GameCardDto>(gameCardDtos, userGames.TotalCount, page, pageSize);
         }
 
-        public async Task<PaginatedList<GameCardDto>> GetGameFeedAsync(int? userId,int page , int pageSize, string ordering)
+        public async Task<PaginatedList<GameCardDto>> GetGameFeedAsync(
+            int? userId,
+            int page,
+            int pageSize,
+            string ordering,
+            CancellationToken cancellationToken)
         {
-            var feed = await _rawgApiService.GetGamesAsync(page, pageSize, ordering);
-            
+            var feed = await _rawgApiService.GetGamesAsync(
+                page,
+                pageSize,
+                null,
+                ordering,
+                cancellationToken);
+
             var dtoList = new PaginatedList<GameCardDto>(feed.Games.Select(g => new GameCardDto
             {
                 RawgId = g.RawgId,
@@ -152,6 +172,20 @@ namespace GameDBWebApi.Services
             return new PaginatedList<GameCardDto>(dtoList, feed.TotalCount, page, pageSize);
         }
 
-       
+        public async Task<PaginatedFeedResponse> SearchGamesAsync(
+            int page,
+            int pageSize,
+            string keyword,
+            CancellationToken cancellationToken)
+        {
+            return await _rawgApiService.GetGamesAsync(
+                page,
+                pageSize,
+                keyword,
+                "-added",
+                cancellationToken);
+        }
+
+
     }
 }
