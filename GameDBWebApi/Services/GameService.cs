@@ -1,4 +1,4 @@
-﻿using GameDBWebApi.DTOs;
+using GameDBWebApi.DTOs;
 using GameDBWebApi.DTOs.Game;
 using GameDBWebApi.Entites;
 using GameDBWebApi.Exceptions;
@@ -9,13 +9,13 @@ namespace GameDBWebApi.Services
     public class GameService : IGameService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IGameCatalogService _rawgApiService;
+        private readonly IGameCatalogService _catalogApiService;
         private readonly ILogger<GameService> _logger;
 
-        public GameService(IUnitOfWork unitOfWork, IGameCatalogService rawgApiService, ILogger<GameService> logger)
+        public GameService(IUnitOfWork unitOfWork, IGameCatalogService catalogApiService, ILogger<GameService> logger)
         {
             _unitOfWork = unitOfWork;
-            _rawgApiService = rawgApiService;
+            _catalogApiService = catalogApiService;
             _logger = logger;
         }
 
@@ -24,17 +24,17 @@ namespace GameDBWebApi.Services
             UpsertGameStatusDto request,
             CancellationToken cancellationToken)
         {
-            var game = await _unitOfWork.Games.GetByRawgIdAsync(request.RawgId);
+            var game = await _unitOfWork.Games.GetByCatalogIdAsync(request.CatalogId);
 
             if (game == null)
             {
-                _logger.LogInformation("Game with RawgId {RawgId} not found in local database. Fetching from RAWG API and saving to db", request.RawgId);
+                _logger.LogInformation("Game with CatalogId {CatalogId} not found in local database. Fetching from IGDB and saving to db", request.CatalogId);
 
-                var rawGameData = await _rawgApiService.GetGameByRawgIdAsync(request.RawgId, cancellationToken);
+                var rawGameData = await _catalogApiService.GetGameByCatalogIdAsync(request.CatalogId, cancellationToken);
 
                 game = new Game
                 {
-                    RawgId = request.RawgId,
+                    CatalogId = request.CatalogId,
                     Title = rawGameData.Title,
                     ImageUrl = rawGameData.ImageUrl,
                     ReleaseDate = rawGameData.ReleaseDate,
@@ -73,17 +73,17 @@ namespace GameDBWebApi.Services
 
         public async Task<GameDetailsResponseDto> GetGameDetailsAsync(
             int? userId,
-            int rawgId,
+            int catalogId,
             CancellationToken cancellationToken)
         {
-            var gameDetails = await _rawgApiService.GetGameDetailsByRawgIdAsync(rawgId, cancellationToken);
+            var gameDetails = await _catalogApiService.GetGameDetailsByCatalogIdAsync(catalogId, cancellationToken);
 
             if (userId == null)
             {
                 return gameDetails;
             }
 
-            var gameInDb = await _unitOfWork.Games.GetByRawgIdAsync(rawgId);
+            var gameInDb = await _unitOfWork.Games.GetByCatalogIdAsync(catalogId);
 
             if (gameInDb != null)
             {
@@ -91,7 +91,7 @@ namespace GameDBWebApi.Services
 
                 if (userGame != null)
                 {
-                    _logger.LogInformation("Game with RawgId {RawgId} is in user {userId}'s library with status {status}.", rawgId, userId, userGame.Status);
+                    _logger.LogInformation("Game with CatalogId {CatalogId} is in user {userId}'s library with status {status}.", catalogId, userId, userGame.Status);
                     gameDetails.IsInMyLibrary = true;
                     gameDetails.MyStatus = userGame.Status;
                 }
@@ -115,7 +115,7 @@ namespace GameDBWebApi.Services
 
             var gameCardDtos = userGames.Select(ug => new GameCardDto
             {
-                RawgId = ug.Game.RawgId,
+                CatalogId = ug.Game.CatalogId,
                 Title = ug.Game.Title,
                 ImageUrl = ug.Game.ImageUrl,
                 Score = ug.Game.Score,
@@ -134,7 +134,7 @@ namespace GameDBWebApi.Services
             string ordering,
             CancellationToken cancellationToken)
         {
-            var feed = await _rawgApiService.GetGamesAsync(
+            var feed = await _catalogApiService.GetGamesByCatalogAsync(
                 page,
                 pageSize,
                 null,
@@ -143,7 +143,7 @@ namespace GameDBWebApi.Services
 
             var dtoList = new PaginatedList<GameCardDto>(feed.Games.Select(g => new GameCardDto
             {
-                RawgId = g.RawgId,
+                CatalogId = g.CatalogId,
                 Title = g.Title,
                 ImageUrl = g.ImageUrl,
                 Score = g.Score
@@ -151,16 +151,16 @@ namespace GameDBWebApi.Services
 
             if (userId.HasValue && dtoList.Any())
             {
-                var rawgIds = dtoList.Select(x => x.RawgId).ToList();
+                var catalogIds = dtoList.Select(x => x.CatalogId).ToList();
 
-                var userGameStatuses = await _unitOfWork.UserGames.GetStatusesByRawgIdsAsync(userId.Value, rawgIds);
+                var userGameStatuses = await _unitOfWork.UserGames.GetStatusesByCatalogIdsAsync(userId.Value, catalogIds);
 
                 //using dictionary o(1) lookup 
-                var statusDict = userGameStatuses.ToDictionary(s => s.Game.RawgId, s => s);
+                var statusDict = userGameStatuses.ToDictionary(s => s.Game.CatalogId, s => s);
 
                 foreach (var item in dtoList)
                 {
-                    if (statusDict.TryGetValue(item.RawgId, out var status))
+                    if (statusDict.TryGetValue(item.CatalogId, out var status))
                     {
                         item.GameId = status.GameId;
                         item.Status = status.Status;
@@ -178,7 +178,7 @@ namespace GameDBWebApi.Services
             string keyword,
             CancellationToken cancellationToken)
         {
-            return await _rawgApiService.GetGamesAsync(
+            return await _catalogApiService.GetGamesByCatalogAsync(
                 page,
                 pageSize,
                 keyword,

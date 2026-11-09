@@ -1,4 +1,4 @@
-﻿using GameDBWebApi.Entites;
+using GameDBWebApi.Entites;
 
 namespace GameDBWebApi.Repositories
 {

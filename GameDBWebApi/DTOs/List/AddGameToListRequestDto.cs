@@ -1,7 +1,7 @@
-﻿namespace GameDBWebApi.DTOs.List
+namespace GameDBWebApi.DTOs.List
 {
     public class AddGameToListRequestDto
     {
-        public int RawgId { get; set; }
+        public int CatalogId { get; set; }
     }
 }

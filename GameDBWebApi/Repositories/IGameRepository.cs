@@ -1,11 +1,11 @@
-﻿using GameDBWebApi.Entites;
+using GameDBWebApi.Entites;
 
 namespace GameDBWebApi.Repositories
 {
    
     public interface IGameRepository
     {
-        Task<Game?> GetByRawgIdAsync(int rawgId);
+        Task<Game?> GetByCatalogIdAsync(int catalogId);
         Task AddAsync(Game game);
 
         Task<Game?> GetByIdAsync(int gameId);

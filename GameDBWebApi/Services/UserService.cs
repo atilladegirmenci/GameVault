@@ -1,4 +1,4 @@
-﻿using GameDBWebApi.Constants;
+using GameDBWebApi.Constants;
 using GameDBWebApi.Entites;
 using GameDBWebApi.Repositories;
 using GameDBWebApi.DTOs.User;
@@ -35,7 +35,7 @@ namespace GameDBWebApi.Services
 
             var gameDtos = userGamesPaginated.Select(ug => new DTOs.Game.GameCardDto
             {
-                RawgId = ug.Game.RawgId,
+                CatalogId = ug.Game.CatalogId,
                 Title = ug.Game.Title,
                 ImageUrl = ug.Game.ImageUrl,
                 Score = ug.Game.Score,

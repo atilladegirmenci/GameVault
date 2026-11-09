@@ -1,4 +1,4 @@
-﻿
+
 using GameDBWebApi.Data;
 using GameDBWebApi.Entites;
 using Microsoft.EntityFrameworkCore;
@@ -87,12 +87,12 @@ namespace GameDBWebApi.Repositories
                 .ToListAsync();
         }
 
-        public async Task<bool> ContainsGameByRawgIdAsync(int listId, int rawgId)
+        public async Task<bool> ContainsGameByCatalogIdAsync(int listId, int catalogId)
         {
             return await _context.UserListGames
                 .AnyAsync(ulg =>
                     ulg.UserListId == listId &&
-                    ulg.Game.RawgId == rawgId);
+                    ulg.Game.CatalogId == catalogId);
         }
 
         public async Task<bool> ContainsGameAsync(int listId, int gameId)

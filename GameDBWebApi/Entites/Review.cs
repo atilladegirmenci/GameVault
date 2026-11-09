@@ -1,4 +1,4 @@
-﻿namespace GameDBWebApi.Entites
+namespace GameDBWebApi.Entites
 {
     /// <summary>
     /// Represents a user review for a specific game. Reviews include a numeric rating and

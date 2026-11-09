@@ -1,4 +1,4 @@
-﻿namespace GameDBWebApi.DTOs.Game
+namespace GameDBWebApi.DTOs.Game
 {
     public class PaginatedFeedResponse
     {

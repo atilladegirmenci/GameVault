@@ -35,7 +35,7 @@ namespace GameDBWebApi.Constants
 
         public static class Review
         {
-            public const string RawgIdMustBeGreaterThanZero = "RAWG game ID must be greater than zero.";
+            public const string CatalogIdMustBeGreaterThanZero = "Game catalog ID must be greater than zero.";
             public const string AlreadyReviewed = "You have already reviewed this game.";
             public const string ReviewIdMustBeGreaterThanZero = "Review ID must be greater than 0.";
             public const string ReviewNotFoundTemplate = "Review not found.";
@@ -47,8 +47,8 @@ namespace GameDBWebApi.Constants
         public static class Game
         {
             public const string KeywordCannotBeNullOrEmpty = "Keyword cannot be null or empty";
-            public const string RawgIdMustBeGreaterThanZero = "RAWG ID must be greater than 0.";
-            public const string RawgGameIdMustBePositive = "RAWG game ID must be a positive integer.";
+            public const string CatalogIdMustBeGreaterThanZero = "Game catalog ID must be greater than 0.";
+            public const string CatalogGameIdMustBePositive = "Game catalog ID must be a positive integer.";
         }
 
         public static class UserList
@@ -63,14 +63,24 @@ namespace GameDBWebApi.Constants
 
         public static class External
         {
-            public const string RawgApiKeyNotConfigured = "RAWG API key is not configured.";
             public const string ExternalApiErrorFetchingGameDetailsTemplate = "External API error occurred while fetching game details. please try again later.";
             public const string ExternalApiErrorFetchingFeedTemplate = "External API error occurred during game feed fetch. please try again later.";
             public const string GameNotFoundTemplate = "Game not found.";
             public const string GameDetailsNotFoundTemplate = "Game details not found.";
             public const string FailedToDeserializeGameDetailsTemplate = "Failed to deserialize game details";
-            public const string GameNotFoundOnRawg = "Game not found on RAWG.";
-            public const string RawgGameNotFoundTemplate = "Game not found.";
+            public const string GameNotFoundOnCatalog = "Game not found in the external catalog.";
+            public const string CatalogGameNotFoundTemplate = "Game not found.";
+            public const string CatalogServiceTemporarilyUnavailable = "The game catalog is temporarily unavailable. Please try again later.";
+            public const string CatalogServiceTimeout = "The game catalog did not respond in time. Please try again later.";
+            public const string CatalogServiceUnreachable = "The game catalog could not be reached. Please try again later.";
+            public const string IgdbClientIdNotConfigured = "IGDB client ID is not configured.";
+            public const string IgdbClientCredentialsInvalid = "Unable to authenticate with the IGDB service.";
+            public const string IgdbRequestFailed = "The IGDB request failed. Please try again later.";
+            public const string IgdbResponseInvalid = "The IGDB service returned an invalid response.";
+            public const string IgdbGameNotFound = "Game not found in IGDB.";
+            public const string IgdbServiceTemporarilyUnavailable = "The IGDB service is temporarily unavailable. Please try again later.";
+            public const string IgdbServiceTimeout = "The IGDB service did not respond in time. Please try again later.";
+            public const string IgdbServiceUnreachable = "The IGDB service could not be reached. Please try again later.";
             public const string RawgServiceTemporarilyUnavailable = "The RAWG service is temporarily unavailable. Please try again later.";
             public const string RawgServiceTimeout = "The RAWG service did not respond in time. Please try again later.";
             public const string RawgServiceUnreachable = "The RAWG service could not be reached. Please try again later.";

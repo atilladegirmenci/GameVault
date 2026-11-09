@@ -1,4 +1,4 @@
-﻿using GameDBWebApi.DTOs.Review;
+using GameDBWebApi.DTOs.Review;
 using GameDBWebApi.Entites;
 using GameDBWebApi.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -20,18 +20,18 @@ namespace GameDBWebApi.Controllers
 
         // GET: api/review/game/3498?page=1&pageSize=10
         [AllowAnonymous]
-        [HttpGet("game/{rawgId:int}")]
+        [HttpGet("game/{catalogId:int}")]
         public async Task<IActionResult> GetGameReviews(
-            [FromRoute] int rawgId,
+            [FromRoute] int catalogId,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
             CancellationToken cancellationToken = default)
         {
-            if (rawgId <= 0)
+            if (catalogId <= 0)
             {
                 return BadRequest(new
                 {
-                    message = "RAWG ID must be greater than 0."
+                    message = "Game catalog ID must be greater than 0."
                 });
             }
 
@@ -45,7 +45,7 @@ namespace GameDBWebApi.Controllers
                 pageSize = 40;
 
             var reviews = await _reviewService.GetGameReviewsAsync(
-                rawgId, page, pageSize, cancellationToken);
+                catalogId, page, pageSize, cancellationToken);
 
             return Ok(reviews);
         }
@@ -79,9 +79,9 @@ namespace GameDBWebApi.Controllers
 
         // POST: api/review/game/3498
         [Authorize]
-        [HttpPost("game/{rawgId:int}")]
+        [HttpPost("game/{catalogId:int}")]
         public async Task<IActionResult> CreateReview(
-            [FromRoute] int rawgId,
+            [FromRoute] int catalogId,
             [FromBody] CreateReviewRequestDto request,
             CancellationToken cancellationToken)
         {
@@ -89,7 +89,7 @@ namespace GameDBWebApi.Controllers
 
             var createdReview = await _reviewService.CreateReviewAsync(
                 currentUserId,
-                rawgId,
+                catalogId,
                 request,
                 cancellationToken);
 

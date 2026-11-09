@@ -1,4 +1,4 @@
-﻿namespace GameDBWebApi.DTOs.Auth
+namespace GameDBWebApi.DTOs.Auth
 {
     public class RegisterRequestDto
     {

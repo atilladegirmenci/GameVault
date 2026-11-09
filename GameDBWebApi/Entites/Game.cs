@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
 namespace GameDBWebApi.Entites
 {
     /// <summary>
-    /// Represents a game in the local database. Many fields are synchronized from the RAWG API.
+    /// Represents a game in the local database. Fields are synchronized from an external game catalog.
     /// </summary>
     public class Game
     {
@@ -13,9 +13,9 @@ namespace GameDBWebApi.Entites
         public int Id { get; set; }
 
         /// <summary>
-        /// The identifier of the game from the RAWG external API.
+        /// The identifier of the game from the external catalog.
         /// </summary>
-        public int RawgId { get; set; }
+        public int CatalogId { get; set; }
 
         /// <summary>
         /// Human-readable title of the game.

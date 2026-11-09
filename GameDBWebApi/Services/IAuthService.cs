@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using GameDBWebApi.DTOs.Auth;
 
 namespace GameDBWebApi.Services

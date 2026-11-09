@@ -1,4 +1,4 @@
-﻿using GameDBWebApi.Entites;
+using GameDBWebApi.Entites;
 
 namespace GameDBWebApi.Repositories
 {
@@ -21,7 +21,7 @@ namespace GameDBWebApi.Repositories
         Task AddGameAsync(int listId, int gameId);
         Task RemoveGameAsync(int listId, int gameId);
         Task<IEnumerable<UserListGame>> GetGamesByListIdAsync(int listId);
-        Task<bool> ContainsGameByRawgIdAsync(int listId, int rawgId);
+        Task<bool> ContainsGameByCatalogIdAsync(int listId, int catalogId);
         Task<bool> ContainsGameAsync(int listId, int gameId);
         Task<int> GetGameCountByListIdAsync(int listId);
     }

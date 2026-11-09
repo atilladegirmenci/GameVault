@@ -1,10 +1,10 @@
-﻿using GameDBWebApi.Entites;
+using GameDBWebApi.Entites;
 
 namespace GameDBWebApi.DTOs.Game
 {
     public class UpsertGameStatusDto
     {
-        public int RawgId { get; set; }
+        public int CatalogId { get; set; }
 
         public string Name { get; set; } = null!;
 

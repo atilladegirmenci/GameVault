@@ -1,4 +1,4 @@
-﻿using GameDBWebApi.Exceptions;
+using GameDBWebApi.Exceptions;
 
 namespace GameDBWebApi.MiddleWares
 {

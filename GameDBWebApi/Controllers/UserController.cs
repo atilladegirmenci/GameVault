@@ -1,4 +1,4 @@
-﻿using GameDBWebApi.DTOs.User;
+using GameDBWebApi.DTOs.User;
 using GameDBWebApi.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;

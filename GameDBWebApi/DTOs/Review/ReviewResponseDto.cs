@@ -1,4 +1,4 @@
-﻿namespace GameDBWebApi.DTOs.Review
+namespace GameDBWebApi.DTOs.Review
 {
     public class ReviewResponseDto
     {
@@ -6,7 +6,7 @@
 
         public int GameId { get; set; }
 
-        public int RawgId { get; set; }
+        public int CatalogId { get; set; }
 
         public int UserId { get; set; }
 

@@ -1,4 +1,4 @@
-﻿using GameDBWebApi.Data;
+using GameDBWebApi.Data;
 using Microsoft.EntityFrameworkCore;
 using GameDBWebApi.Entites;
 
@@ -18,9 +18,9 @@ namespace GameDBWebApi.Repositories
             await _context.Games.AddAsync(game);
         }
 
-        public async Task<Game?> GetByRawgIdAsync(int rawgId)
+        public async Task<Game?> GetByCatalogIdAsync(int catalogId)
         {
-            return await _context.Games.FirstOrDefaultAsync(g => g.RawgId == rawgId);
+            return await _context.Games.FirstOrDefaultAsync(g => g.CatalogId == catalogId);
         }
 
         public async Task<Game?> GetByIdAsync(int gameId)

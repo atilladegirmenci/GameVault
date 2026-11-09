@@ -1,4 +1,4 @@
-﻿
+
 using System.Security.Claims;
 using GameDBWebApi.DTOs.List;
 using GameDBWebApi.Services;
@@ -80,7 +80,7 @@ namespace GameDBWebApi.Controllers
             if (!TryGetUserId(out var userId))
                 return Unauthorized();
 
-            await _userListService.AddGameAsync(userId, listId, request.RawgId, cancellationToken);
+            await _userListService.AddGameAsync(userId, listId, request.CatalogId, cancellationToken);
 
             return NoContent();
         }

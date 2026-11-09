@@ -1,4 +1,4 @@
-﻿using GameDBWebApi.DTOs.Game;
+using GameDBWebApi.DTOs.Game;
 using GameDBWebApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -90,14 +90,14 @@ namespace GameDBWebApi.Controllers
         }
 
         [AllowAnonymous]
-        [HttpGet("{rawgId}")]
+        [HttpGet("{catalogId}")]
         public async Task<IActionResult> GetGameDetails(
-            [FromRoute] int rawgId,
+            [FromRoute] int catalogId,
             CancellationToken cancellationToken)
         {
             int? userId = GetOptionalUserId();
 
-            var game = await _gameService.GetGameDetailsAsync(userId, rawgId, cancellationToken);
+            var game = await _gameService.GetGameDetailsAsync(userId, catalogId, cancellationToken);
 
             return Ok(game);
         }

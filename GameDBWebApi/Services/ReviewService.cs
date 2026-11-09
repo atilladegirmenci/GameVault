@@ -1,4 +1,4 @@
-﻿using GameDBWebApi.Constants;
+using GameDBWebApi.Constants;
 using GameDBWebApi.Entites;
 using GameDBWebApi.Exceptions;
 using GameDBWebApi.Repositories;
@@ -10,32 +10,32 @@ namespace GameDBWebApi.Services
     public class ReviewService : IReviewService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IGameCatalogService _rawgApiService;
+        private readonly IGameCatalogService _catalogApiService;
         private readonly ILogger<ReviewService> _logger;
 
         public ReviewService(
             IUnitOfWork unitOfWork,
-            IGameCatalogService rawgApiService,
+            IGameCatalogService catalogApiService,
             ILogger<ReviewService> logger)
         {
             _unitOfWork = unitOfWork;
-            _rawgApiService = rawgApiService;
+            _catalogApiService = catalogApiService;
             _logger = logger;
         }
 
         public async Task<ReviewResponseDto> CreateReviewAsync(
             int userId,
-            int rawgId,
+            int catalogId,
             CreateReviewRequestDto request,
             CancellationToken cancellationToken)
         {
-            if (rawgId <= 0)
+            if (catalogId <= 0)
             {
                 throw new BadRequestException(
-                    ErrorMessages.Review.RawgIdMustBeGreaterThanZero);
+                    ErrorMessages.Review.CatalogIdMustBeGreaterThanZero);
             }
 
-            var game = await GetOrCreateGameAsync(rawgId, cancellationToken);
+            var game = await GetOrCreateGameAsync(catalogId, cancellationToken);
 
             var alreadyReviewed = await _unitOfWork.Reviews
                 .UserReviewExistsAsync(game.Id, userId);
@@ -98,20 +98,20 @@ namespace GameDBWebApi.Services
         }
 
         public async Task<PaginatedList<ReviewResponseDto>> GetGameReviewsAsync(
-            int RawgId,
+            int CatalogId,
             int page,
             int pageSize,
             CancellationToken cancellationToken)
         {
             ValidatePagination(page, pageSize);
 
-            if (RawgId <= 0)
+            if (CatalogId <= 0)
             {
                 throw new BadRequestException(
-                    ErrorMessages.Review.RawgIdMustBeGreaterThanZero);
+                    ErrorMessages.Review.CatalogIdMustBeGreaterThanZero);
             }
 
-            var game = await GetOrCreateGameAsync(RawgId, cancellationToken);
+            var game = await GetOrCreateGameAsync(CatalogId, cancellationToken);
 
             var reviews = await _unitOfWork.Reviews
                 .GetByGameIdAsync(game.Id, page, pageSize);
@@ -170,27 +170,27 @@ namespace GameDBWebApi.Services
         }
 
         private async Task<Game> GetOrCreateGameAsync(
-            int rawgId,
+            int catalogId,
             CancellationToken cancellationToken)
         {
-            var game = await _unitOfWork.Games.GetByRawgIdAsync(rawgId);
+            var game = await _unitOfWork.Games.GetByCatalogIdAsync(catalogId);
 
             if (game != null)
             {
                 return game;
             }
 
-            var rawGameData = await _rawgApiService.GetGameByRawgIdAsync(rawgId, cancellationToken);
+            var rawGameData = await _catalogApiService.GetGameByCatalogIdAsync(catalogId, cancellationToken);
 
             if (rawGameData == null)
             {
                 throw new NotFoundException(
-                    string.Format(ErrorMessages.External.RawgGameNotFoundTemplate, rawgId));
+                    string.Format(ErrorMessages.External.CatalogGameNotFoundTemplate, catalogId));
             }
 
             game = new Game
             {
-                RawgId = rawgId,
+                CatalogId = catalogId,
                 Title = rawGameData.Title,
                 ImageUrl = rawGameData.ImageUrl,
                 ReleaseDate = rawGameData.ReleaseDate,
@@ -224,7 +224,7 @@ namespace GameDBWebApi.Services
             {
                 Id = review.Id,
                 GameId = review.GameId,
-                RawgId = review.Game?.RawgId ?? 0,
+                CatalogId = review.Game?.CatalogId ?? 0,
                 UserId = review.UserId,
                 UserName = review.User?.UserName ?? string.Empty,
                 Rating = review.Rating,

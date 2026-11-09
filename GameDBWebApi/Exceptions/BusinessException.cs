@@ -1,4 +1,4 @@
-﻿namespace GameDBWebApi.Exceptions
+namespace GameDBWebApi.Exceptions
 {
     public abstract class BusinessException : Exception
     {
