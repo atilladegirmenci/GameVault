@@ -1,6 +1,6 @@
 # 🎮 GameVault
 
-**GameVault** is an open-source game library management Web API built with **ASP.NET Core and .NET 10**. It allows users to manage their personal game collections, track their gaming progress, write reviews, and create custom game lists using data from the [RAWG Video Games Database API](https://rawg.io/apidocs).
+**GameVault** is an open-source game library management Web API built with **ASP.NET Core and .NET 10**. It allows users to manage their personal game collections, track their gaming progress, write reviews, and create custom game lists using data from the [IGDB Video Games Database API](https://api-docs.igdb.com/).
 
 This project is both a functional backend application and an ongoing learning project focused on modern .NET development, RESTful API design, database management, authentication, and maintainable software architecture.
 
@@ -16,7 +16,8 @@ I'm open to **contributions, suggestions, feedback, and collaboration**. Whether
 - User account management.
 
 ### 🎮 Game Library Management
-- Integration with the RAWG API to retrieve video game information.
+- Integration with IGDB to retrieve video game information through its Apicalypse query API.
+- Dynamic Twitch OAuth client-credentials access tokens for IGDB requests.
 - Search and retrieve game details.
 - Manage a personal game library.
 - Track game statuses, including playing, completed, and planned-to-play games.
@@ -55,7 +56,8 @@ I'm open to **contributions, suggestions, feedback, and collaboration**. Whether
 | JWT | Authentication |
 | BCrypt.Net-Next | Password hashing |
 | Serilog | Application logging |
-| RAWG API | Video game data |
+| IGDB API | Video game data |
+| Twitch OAuth | IGDB access-token authentication |
 | Swagger / OpenAPI | API documentation |
 | xUnit, Moq, FluentAssertions | Unit testing |
 
@@ -96,7 +98,7 @@ GameVault/
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - SQL Server
-- An API key from [RAWG](https://rawg.io/apidocs)
+- A Twitch developer application with an IGDB `ClientId` and `ClientSecret`
 - Visual Studio, Rider, or VS Code (optional)
 
 ### 1. Clone the repository
@@ -108,7 +110,7 @@ cd GameVault
 
 ### 2. Configure application settings
 
-Configure your database connection string and JWT settings using User Secrets, environment variables, or local development configuration.
+Configure your database connection string, JWT settings, and IGDB/Twitch credentials using User Secrets, environment variables, or local development configuration.
 
 Required settings include:
 
@@ -116,7 +118,8 @@ Required settings include:
 - `JwtSettings:SecretKey`
 - `JwtSettings:Issuer`
 - `JwtSettings:Audience`
-- Your RAWG API key, using the configuration key expected by the application.
+- `IGDB:ClientId`
+- `IGDB:ClientSecret`
 - `EmailSettings:SmtpHost`
 - `EmailSettings:SmtpPort`
 - `EmailSettings:Username`
@@ -128,6 +131,21 @@ Required settings include:
 
 Configure SMTP credentials with User Secrets, environment variables, or a managed secret store.
 **Do not commit real API keys, JWT secrets, SMTP passwords, or other credentials to source control.**
+
+For local development, User Secrets can be configured with:
+
+```bash
+dotnet user-secrets set "IGDB:ClientId" "<your-twitch-client-id>" --project GameDBWebApi
+dotnet user-secrets set "IGDB:ClientSecret" "<your-twitch-client-secret>" --project GameDBWebApi
+```
+
+The application requests Twitch access tokens dynamically and caches them until they are
+close to expiration. The token is then sent with the `Client-ID` header and bearer
+authorization required by IGDB.
+
+The active catalog implementation is `IGDBApiService`, registered behind
+`IGameCatalogService`. `RawgApiService` remains available as an alternative adapter for
+future provider switching, but it is not the active catalog provider.
 
 ### 3. Apply database migrations
 
@@ -173,7 +191,7 @@ Potential and planned improvements include:
 - Reviewing DTO and entity validation rules.
 - Reviewing transaction boundaries and concurrency handling.
 - Auditing database indexes and query performance.
-- Improving RAWG API resilience with retries, circuit breakers, and caching.
+- Improving IGDB API resilience with retries, circuit breakers, and caching.
 - Enhancing structured logging with correlation IDs and security audit events.
 - Centralizing error messages and improving consistency.
 - Exploring Docker support and containerization.
