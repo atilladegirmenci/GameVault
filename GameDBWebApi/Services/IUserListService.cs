@@ -25,7 +25,8 @@ namespace GameDBWebApi.Services
         Task AddGameAsync(
             int userId,
             int listId,
-            int rawgId);
+            int rawgId,
+            CancellationToken cancellationToken);
 
         Task RemoveGameAsync(
             int userId,

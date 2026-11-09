@@ -2,12 +2,14 @@
 using GameDBWebApi.DTOs.Game;
 using GameDBWebApi.Entites;
 using GameDBWebApi.Exceptions;
+using Polly.CircuitBreaker;
+using Polly.Timeout;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace GameDBWebApi.Services
 {
-    public class RawgApiService : IRawgApiService
+    public class RawgApiService : IGameCatalogService
     {
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
@@ -18,14 +20,14 @@ namespace GameDBWebApi.Services
             _configuration = conf;
             _httpClient = httpClient;
             _logger = logger;
-            _apiKey = _configuration["RawgApiKey"]!; 
+            _apiKey = _configuration["RawgApiKey"]!;
         }
-        public async Task<Game?> GetGameByRawgIdAsync(int rawgId)
+        public async Task<Game?> GetGameByRawgIdAsync(int rawgId, CancellationToken cancellationToken)
         {
+            _logger.LogInformation($"fetching game details for RawgId: {rawgId}");
 
             var requestUrl = $"https://api.rawg.io/api/games/{rawgId}?key={_apiKey}";
-            var response = await _httpClient.GetAsync(requestUrl);
-            _logger.LogInformation($"fetching game details for RawgId: {rawgId}");
+            var response = await SendRequestAsync(requestUrl, cancellationToken); //TODO: consider using the using block for the response to ensure it is disposed of properly.
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -39,7 +41,7 @@ namespace GameDBWebApi.Services
                 throw new ExternalServiceException(string.Format(ErrorMessages.External.ExternalApiErrorFetchingGameDetailsTemplate, response.StatusCode));
             }
 
-            var jsonString = await response.Content.ReadAsStringAsync();
+            var jsonString = await response.Content.ReadAsStringAsync(); //TODO: this method has a overload that accepts a cancellation token. i can update these methods.
             var rawgData = JsonSerializer.Deserialize<RawgGameResponse>(jsonString);
 
             if (rawgData == null)
@@ -57,11 +59,13 @@ namespace GameDBWebApi.Services
             };
 
         }
-        public async Task<GameDetailsResponseDto> GetGameDetailsByRawgIdAsync(int rawgId)
+        public async Task<GameDetailsResponseDto> GetGameDetailsByRawgIdAsync(
+            int rawgId,
+            CancellationToken cancellationToken)
         {
             var requestUrl = $"https://api.rawg.io/api/games/{rawgId}?key={_apiKey}";
 
-            var response = await _httpClient.GetAsync(requestUrl);
+            var response = await SendRequestAsync(requestUrl, cancellationToken);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
@@ -104,8 +108,13 @@ namespace GameDBWebApi.Services
             };
 
         }
-       
-        public async Task<PaginatedFeedResponse> GetGamesAsync(int page, int pageSize, string? keyword, string ordering = "-added")
+
+        public async Task<PaginatedFeedResponse> GetGamesAsync(
+            int page,
+            int pageSize,
+            string? keyword,
+            string ordering,
+            CancellationToken cancellationToken)
         {
             var requestUrl = $"https://api.rawg.io/api/games?key={_apiKey}&page={page}&page_size={pageSize}&ordering={ordering}";
 
@@ -120,10 +129,10 @@ namespace GameDBWebApi.Services
             {
                 _logger.LogInformation("Fetching game feed from RAWG. Page: {Page}, Ordering: {Ordering} ", page, ordering);
             }
-            
-            var response = await _httpClient.GetAsync(requestUrl);
 
-            if(!response.IsSuccessStatusCode)
+            var response = await SendRequestAsync(requestUrl, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
             {
 
                 _logger.LogWarning("RAWG API request failed with status code: {StatusCode}. URL: {Url}", response.StatusCode, requestUrl);
@@ -134,7 +143,7 @@ namespace GameDBWebApi.Services
             var jsonString = await response.Content.ReadAsStringAsync();
             var rawgData = JsonSerializer.Deserialize<RawgListResponse>(jsonString);
 
-            if(rawgData == null || rawgData.Results == null || !rawgData.Results.Any())
+            if (rawgData == null || rawgData.Results == null || !rawgData.Results.Any())
             {
                 return new PaginatedFeedResponse(); //empty if nothing found
             }
@@ -157,34 +166,68 @@ namespace GameDBWebApi.Services
 
         }
 
+        private async Task<HttpResponseMessage> SendRequestAsync(
+            string requestUrl,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                return await _httpClient.GetAsync(requestUrl, cancellationToken);
+            }
+            catch (BrokenCircuitException ex)
+            {
+                _logger.LogWarning(ex, "RAWG circuit is open. Request was rejected: {Url}", requestUrl);
+                throw new ExternalServiceUnavailableException(
+                    ErrorMessages.External.RawgServiceTemporarilyUnavailable);
+            }
+            catch (TimeoutRejectedException ex)
+            {
+                _logger.LogWarning(ex, "RAWG request timed out after resilience policy: {Url}", requestUrl);
+                throw new ExternalServiceUnavailableException(
+                    ErrorMessages.External.RawgServiceTimeout);
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "RAWG request failed after resilience policy: {Url}", requestUrl);
+                throw new ExternalServiceException(
+                    ErrorMessages.External.RawgServiceUnreachable);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested) // only catch if the cancellation was not requested by the caller. that means it was a timeout from the HttpClient.
+            {
+                _logger.LogWarning("RAWG request timed out: {Url}", requestUrl);
+                throw new ExternalServiceUnavailableException(
+                    ErrorMessages.External.RawgServiceTimeout);
+            }
+        }
 
-    public class RawgListResponse
-    {
-        [JsonPropertyName("results")]
-        public List<RawgGameResponse> Results { get; set; } = new List<RawgGameResponse>();
 
-        [JsonPropertyName("count")]
-        public int Count { get; set; }
-    }
-    public class RawgGameResponse
-    {
-        [JsonPropertyName("id")]
-        public int Id { get; set; }
+        public class RawgListResponse
+        {
+            [JsonPropertyName("results")]
+            public List<RawgGameResponse> Results { get; set; } = new List<RawgGameResponse>();
 
-        [JsonPropertyName("name")]
-        public string Name { get; set; }
+            [JsonPropertyName("count")]
+            public int Count { get; set; }
+        }
+        public class RawgGameResponse
+        {
+            [JsonPropertyName("id")]
+            public int Id { get; set; }
 
-        [JsonPropertyName("background_image")]
-        public string BackgroundImage { get; set; }
+            [JsonPropertyName("name")]
+            public string Name { get; set; }
 
-        [JsonPropertyName("released")]
-        public DateTime? Released { get; set; }
+            [JsonPropertyName("background_image")]
+            public string BackgroundImage { get; set; }
 
-        [JsonPropertyName("metacritic")]
-        public int? Metacritic { get; set; } // Representing the Score
-         }
-    public class RawgGameDetailsResponse : RawgGameResponse
-    {
+            [JsonPropertyName("released")]
+            public DateTime? Released { get; set; }
+
+            [JsonPropertyName("metacritic")]
+            public int? Metacritic { get; set; } // Representing the Score
+        }
+        public class RawgGameDetailsResponse : RawgGameResponse
+        {
             [JsonPropertyName("description_raw")]
             public string Description { get; set; }
 
@@ -200,11 +243,11 @@ namespace GameDBWebApi.Services
             [JsonPropertyName("publishers")]
             public List<RawgNamedItem> Publishers { get; set; }
         }
-    public class RawgNamedItem
-    {
+        public class RawgNamedItem
+        {
             [JsonPropertyName("id")] public int Id { get; set; }
             [JsonPropertyName("name")] public string Name { get; set; }
-    }
+        }
 
 
     }

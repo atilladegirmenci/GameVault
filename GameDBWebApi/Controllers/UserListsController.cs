@@ -72,12 +72,15 @@ namespace GameDBWebApi.Controllers
 
         [HttpPost("{listId:int}/games")]
         [Authorize]
-        public async Task<IActionResult> AddGame(int listId, [FromBody] AddGameToListRequestDto request)
+        public async Task<IActionResult> AddGame(
+            int listId,
+            [FromBody] AddGameToListRequestDto request,
+            CancellationToken cancellationToken)
         {
             if (!TryGetUserId(out var userId))
                 return Unauthorized();
 
-            await _userListService.AddGameAsync(userId, listId, request.RawgId);
+            await _userListService.AddGameAsync(userId, listId, request.RawgId, cancellationToken);
 
             return NoContent();
         }

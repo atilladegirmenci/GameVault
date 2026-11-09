@@ -11,35 +11,38 @@ namespace GameDBWebApi.Controllers
     public class GameController : ControllerBase
     {
         private readonly IGameService _gameService;
-        private readonly IRawgApiService _rawgApiService;
 
-        public GameController(IGameService gameService, IRawgApiService rawgApiService)
+        public GameController(IGameService gameService)
         {
             _gameService = gameService;
-            _rawgApiService = rawgApiService;
         }
 
         [Authorize]
         [HttpPost("status")]
-        public async Task<IActionResult> UpdateGameStatus([FromBody] UpsertGameStatusDto request)
+        public async Task<IActionResult> UpdateGameStatus(
+            [FromBody] UpsertGameStatusDto request,
+            CancellationToken cancellationToken)
         {
             var currentUserId = GetCurrentUserId();
 
-            await _gameService.UpsertGameStatusAsync(currentUserId, request);
+            await _gameService.UpsertGameStatusAsync(currentUserId, request, cancellationToken);
 
             return Ok(new { message = $"Game status updated successfully to '{request.Status}'" });
         }
 
         [Authorize]
         [HttpGet("my-games")]
-        public async Task<IActionResult> GetUserGames([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetUserGames(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            CancellationToken cancellationToken = default)
         {
             var currentUserId = GetCurrentUserId();
 
             if (pageSize > 40) pageSize = 40;
             if (page < 1) page = 1;
 
-            var userGames = await _gameService.GetUserGamesAsync(currentUserId, page, pageSize);
+            var userGames = await _gameService.GetUserGamesAsync(currentUserId, page, pageSize, cancellationToken);
             return Ok(userGames);
         }
 
@@ -48,14 +51,15 @@ namespace GameDBWebApi.Controllers
         public async Task<IActionResult> GetGameFeed(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
-            [FromQuery] string ordering = "added") //TODO: Make ordering an enum or a set of predefined values to avoid invalid inputs
+            [FromQuery] string ordering = "added",
+            CancellationToken cancellationToken = default) //TODO: Make ordering an enum or a set of predefined values to avoid invalid inputs
         {
             int? userId = GetOptionalUserId();
 
             if (pageSize > 40) pageSize = 40;
             if (page < 1) page = 1;
 
-            var feed = await _gameService.GetGameFeedAsync(userId, page, pageSize, ordering);
+            var feed = await _gameService.GetGameFeedAsync(userId, page, pageSize, ordering, cancellationToken);
 
             return Ok(feed);
         }
@@ -65,7 +69,8 @@ namespace GameDBWebApi.Controllers
         public async Task<IActionResult> SearchGameByTitle(
             [FromQuery] string keyword,
             [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10)
+            [FromQuery] int pageSize = 10,
+            CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(keyword))
             {
@@ -75,18 +80,24 @@ namespace GameDBWebApi.Controllers
             if (pageSize > 40) pageSize = 40;
             if (page < 1) page = 1;
 
-            var searchResults = await _rawgApiService.GetGamesAsync(page, pageSize, keyword, "-added");
+            var searchResults = await _gameService.SearchGamesAsync(
+                page,
+                pageSize,
+                keyword,
+                cancellationToken);
 
             return Ok(searchResults);
         }
 
         [AllowAnonymous]
         [HttpGet("{rawgId}")]
-        public async Task<IActionResult> GetGameDetails([FromRoute] int rawgId)
+        public async Task<IActionResult> GetGameDetails(
+            [FromRoute] int rawgId,
+            CancellationToken cancellationToken)
         {
             int? userId = GetOptionalUserId();
 
-            var game = await _gameService.GetGameDetailsAsync(userId, rawgId);
+            var game = await _gameService.GetGameDetailsAsync(userId, rawgId, cancellationToken);
 
             return Ok(game);
         }

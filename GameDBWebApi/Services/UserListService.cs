@@ -9,18 +9,18 @@ namespace GameDBWebApi.Services
     public class UserListService : IUserListService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IRawgApiService _rawgApiService;
+        private readonly IGameCatalogService _rawgApiService;
         private const int MaxGamesPerList = 100; // for now keeping this in this service, but could be moved to a config file or database if needed in the future.
 
-        public UserListService(IUnitOfWork unitOfWork, IRawgApiService rawgApiService)
+        public UserListService(IUnitOfWork unitOfWork, IGameCatalogService rawgApiService)
         {
             _unitOfWork = unitOfWork;
             _rawgApiService = rawgApiService;
         }
-       
+
 
         public async Task<UserListResponseDto> CreateListAsync(int userId, CreateUserListRequestDto request)
-        { 
+        {
             var userList = new UserList
             {
                 UserId = userId,
@@ -107,7 +107,11 @@ namespace GameDBWebApi.Services
                 GameCount = list.ListedGames.Count
             });
         }
-        public async Task AddGameAsync(int userId, int listId, int rawgId)
+        public async Task AddGameAsync(
+            int userId,
+            int listId,
+            int rawgId,
+            CancellationToken cancellationToken)
         {
             if (rawgId <= 0)
                 throw new BadRequestException(ErrorMessages.Game.RawgGameIdMustBePositive);
@@ -131,7 +135,7 @@ namespace GameDBWebApi.Services
 
             if (game is null)
             {
-                var rawgGame = await _rawgApiService.GetGameDetailsByRawgIdAsync(rawgId);
+                var rawgGame = await _rawgApiService.GetGameDetailsByRawgIdAsync(rawgId, cancellationToken);
 
                 if (rawgGame is null)
                     throw new NotFoundException(ErrorMessages.External.GameNotFoundOnRawg);

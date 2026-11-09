@@ -10,12 +10,12 @@ namespace GameDBWebApi.Services
     public class ReviewService : IReviewService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IRawgApiService _rawgApiService;
+        private readonly IGameCatalogService _rawgApiService;
         private readonly ILogger<ReviewService> _logger;
 
         public ReviewService(
             IUnitOfWork unitOfWork,
-            IRawgApiService rawgApiService,
+            IGameCatalogService rawgApiService,
             ILogger<ReviewService> logger)
         {
             _unitOfWork = unitOfWork;
@@ -26,7 +26,8 @@ namespace GameDBWebApi.Services
         public async Task<ReviewResponseDto> CreateReviewAsync(
             int userId,
             int rawgId,
-            CreateReviewRequestDto request)
+            CreateReviewRequestDto request,
+            CancellationToken cancellationToken)
         {
             if (rawgId <= 0)
             {
@@ -34,7 +35,7 @@ namespace GameDBWebApi.Services
                     ErrorMessages.Review.RawgIdMustBeGreaterThanZero);
             }
 
-            var game = await GetOrCreateGameAsync(rawgId);
+            var game = await GetOrCreateGameAsync(rawgId, cancellationToken);
 
             var alreadyReviewed = await _unitOfWork.Reviews
                 .UserReviewExistsAsync(game.Id, userId);
@@ -67,10 +68,10 @@ namespace GameDBWebApi.Services
             var createdReview = await _unitOfWork.Reviews
                 .GetByIdAsync(review.Id);
 
-            return MapToResponseDto(createdReview ?? review); 
+            return MapToResponseDto(createdReview ?? review);
         }
 
-        public async Task DeleteReviewAsync(int userId, int  reviewId)
+        public async Task DeleteReviewAsync(int userId, int reviewId)
         {
             var review = await _unitOfWork.Reviews
                  .GetByIdAsync(reviewId);
@@ -99,7 +100,8 @@ namespace GameDBWebApi.Services
         public async Task<PaginatedList<ReviewResponseDto>> GetGameReviewsAsync(
             int RawgId,
             int page,
-            int pageSize)
+            int pageSize,
+            CancellationToken cancellationToken)
         {
             ValidatePagination(page, pageSize);
 
@@ -109,11 +111,11 @@ namespace GameDBWebApi.Services
                     ErrorMessages.Review.RawgIdMustBeGreaterThanZero);
             }
 
-            var game = await GetOrCreateGameAsync(RawgId);
+            var game = await GetOrCreateGameAsync(RawgId, cancellationToken);
 
             var reviews = await _unitOfWork.Reviews
                 .GetByGameIdAsync(game.Id, page, pageSize);
-            
+
             var totalCount = await _unitOfWork.Reviews
                .GetCountByGameIdAsync(game.Id);
 
@@ -167,7 +169,9 @@ namespace GameDBWebApi.Services
                 pageSize);
         }
 
-        private async Task<Game> GetOrCreateGameAsync(int rawgId)
+        private async Task<Game> GetOrCreateGameAsync(
+            int rawgId,
+            CancellationToken cancellationToken)
         {
             var game = await _unitOfWork.Games.GetByRawgIdAsync(rawgId);
 
@@ -176,7 +180,7 @@ namespace GameDBWebApi.Services
                 return game;
             }
 
-            var rawGameData = await _rawgApiService.GetGameByRawgIdAsync(rawgId);
+            var rawGameData = await _rawgApiService.GetGameByRawgIdAsync(rawgId, cancellationToken);
 
             if (rawGameData == null)
             {
@@ -213,7 +217,7 @@ namespace GameDBWebApi.Services
                     ErrorMessages.Review.PageSizeRange);
             }
         }
-      
+
         private static ReviewResponseDto MapToResponseDto(Review review)
         {
             return new ReviewResponseDto
