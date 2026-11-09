@@ -1,4 +1,4 @@
-﻿using GameDBWebApi.DTOs.Auth;
+using GameDBWebApi.DTOs.Auth;
 using GameDBWebApi.Exceptions;
 using GameDBWebApi.Services;
 using Microsoft.AspNetCore.Authorization;

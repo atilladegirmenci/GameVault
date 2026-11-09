@@ -1,4 +1,4 @@
-﻿namespace GameDBWebApi.Entites
+namespace GameDBWebApi.Entites
 {
     /// <summary>
     /// Represents the relationship between a User and a Game. Stores the user's

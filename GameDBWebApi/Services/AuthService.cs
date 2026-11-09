@@ -1,4 +1,4 @@
-﻿using Azure.Core;
+using Azure.Core;
 using BCrypt.Net;
 using GameDBWebApi.Constants;
 using GameDBWebApi.DTOs.Auth;

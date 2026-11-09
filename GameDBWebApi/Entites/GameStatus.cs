@@ -1,4 +1,4 @@
-﻿namespace GameDBWebApi.Entites
+namespace GameDBWebApi.Entites
 {
     /// <summary>
     /// Represents the status of a game in a user's personal library.

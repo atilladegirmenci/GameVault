@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using GameDBWebApi.Entites;
 using System;
 using System.Linq;
@@ -123,7 +123,7 @@ namespace GameDBWebApi.Data
 
                 entity.HasKey(g => g.Id);
 
-                entity.HasIndex(g => g.RawgId).IsUnique();
+                entity.HasIndex(g => g.CatalogId).IsUnique();
 
                 entity.Property(g => g.Title).IsRequired().HasMaxLength(250);
             });

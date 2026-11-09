@@ -67,12 +67,12 @@ namespace GameDBWebApi.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CatalogId")
+                        .HasColumnType("int");
+
                     b.Property<string>("ImageUrl")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("RawgId")
-                        .HasColumnType("int");
 
                     b.Property<DateTime?>("ReleaseDate")
                         .HasColumnType("datetime2");
@@ -87,7 +87,7 @@ namespace GameDBWebApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("RawgId")
+                    b.HasIndex("CatalogId")
                         .IsUnique();
 
                     b.ToTable("Games", (string)null);

@@ -1,4 +1,4 @@
-﻿
+
 using GameDBWebApi.DTOs.List;
 
 namespace GameDBWebApi.Services
@@ -25,7 +25,7 @@ namespace GameDBWebApi.Services
         Task AddGameAsync(
             int userId,
             int listId,
-            int rawgId,
+            int catalogId,
             CancellationToken cancellationToken);
 
         Task RemoveGameAsync(

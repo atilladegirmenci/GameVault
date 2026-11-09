@@ -7,9 +7,9 @@ namespace GameDBWebApi.DTOs.Validators
     {
         public AddGameToListRequestDtoValidator()
         {
-            RuleFor(x => x.RawgId)
+            RuleFor(x => x.CatalogId)
                 .GreaterThan(0)
-                .WithMessage("RAWG game ID must be a positive integer.");
+                .WithMessage("Game catalog ID must be a positive integer.");
         }
     }
 }

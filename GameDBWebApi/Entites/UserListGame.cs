@@ -1,4 +1,4 @@
-﻿namespace GameDBWebApi.Entites
+namespace GameDBWebApi.Entites
 {
     /// <summary>
     /// Junction table entity representing the many-to-many relationship between UserList and Game.

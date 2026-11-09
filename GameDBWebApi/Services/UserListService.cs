@@ -1,4 +1,4 @@
-﻿using GameDBWebApi.Constants;
+using GameDBWebApi.Constants;
 using GameDBWebApi.DTOs.List;
 using GameDBWebApi.Entites;
 using GameDBWebApi.Exceptions;
@@ -9,13 +9,13 @@ namespace GameDBWebApi.Services
     public class UserListService : IUserListService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IGameCatalogService _rawgApiService;
+        private readonly IGameCatalogService _catalogApiService;
         private const int MaxGamesPerList = 100; // for now keeping this in this service, but could be moved to a config file or database if needed in the future.
 
-        public UserListService(IUnitOfWork unitOfWork, IGameCatalogService rawgApiService)
+        public UserListService(IUnitOfWork unitOfWork, IGameCatalogService catalogApiService)
         {
             _unitOfWork = unitOfWork;
-            _rawgApiService = rawgApiService;
+            _catalogApiService = catalogApiService;
         }
 
 
@@ -81,7 +81,7 @@ namespace GameDBWebApi.Services
             return listGames.Select(ulg => new UserListGameResponseDto
             {
                 GameId = ulg.GameId,
-                RawgId = ulg.Game.RawgId,
+                CatalogId = ulg.Game.CatalogId,
                 Title = ulg.Game.Title,
                 ImageUrl = ulg.Game.ImageUrl,
                 AddedDate = ulg.AddedDate
@@ -110,16 +110,16 @@ namespace GameDBWebApi.Services
         public async Task AddGameAsync(
             int userId,
             int listId,
-            int rawgId,
+            int catalogId,
             CancellationToken cancellationToken)
         {
-            if (rawgId <= 0)
-                throw new BadRequestException(ErrorMessages.Game.RawgGameIdMustBePositive);
+            if (catalogId <= 0)
+                throw new BadRequestException(ErrorMessages.Game.CatalogGameIdMustBePositive);
 
             var userList = await GetOwnedListAsync(userId, listId);
 
             var alreadyExists = await _unitOfWork.UserLists
-                .ContainsGameByRawgIdAsync(listId, rawgId);
+                .ContainsGameByCatalogIdAsync(listId, catalogId);
 
             if (alreadyExists)
                 throw new ConflictException(ErrorMessages.UserList.GameAlreadyInList);
@@ -131,20 +131,20 @@ namespace GameDBWebApi.Services
                 throw new BadRequestException(
                     string.Format(ErrorMessages.UserList.ListMaxGamesTemplate, MaxGamesPerList));
 
-            var game = await _unitOfWork.Games.GetByRawgIdAsync(rawgId);
+            var game = await _unitOfWork.Games.GetByCatalogIdAsync(catalogId);
 
             if (game is null)
             {
-                var rawgGame = await _rawgApiService.GetGameDetailsByRawgIdAsync(rawgId, cancellationToken);
+                var catalogGame = await _catalogApiService.GetGameDetailsByCatalogIdAsync(catalogId, cancellationToken);
 
-                if (rawgGame is null)
-                    throw new NotFoundException(ErrorMessages.External.GameNotFoundOnRawg);
+                if (catalogGame is null)
+                    throw new NotFoundException(ErrorMessages.External.GameNotFoundOnCatalog);
 
                 game = new Game
                 {
-                    RawgId = rawgId,
-                    Title = rawgGame.Title,
-                    ImageUrl = rawgGame.ImageUrl
+                    CatalogId = catalogId,
+                    Title = catalogGame.Title,
+                    ImageUrl = catalogGame.ImageUrl
                 };
 
                 await _unitOfWork.Games.AddAsync(game);

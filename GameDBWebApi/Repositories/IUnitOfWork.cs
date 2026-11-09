@@ -1,4 +1,4 @@
-﻿namespace GameDBWebApi.Repositories
+namespace GameDBWebApi.Repositories
 {
     public interface IUnitOfWork : IDisposable
     {

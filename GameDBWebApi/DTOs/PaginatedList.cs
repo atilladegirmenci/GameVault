@@ -1,4 +1,4 @@
-﻿namespace GameDBWebApi.DTOs
+namespace GameDBWebApi.DTOs
 {
     // Generic class to represent a paginated list of items
     public class PaginatedList<T>: List<T>

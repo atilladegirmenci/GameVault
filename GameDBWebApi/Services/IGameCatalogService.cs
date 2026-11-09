@@ -1,14 +1,13 @@
-﻿using GameDBWebApi.DTOs.Game;
+using GameDBWebApi.DTOs.Game;
 using GameDBWebApi.Entites;
 
 namespace GameDBWebApi.Services
 {
     public interface IGameCatalogService
     {
-        Task<Game?> GetGameByRawgIdAsync(int rawgId, CancellationToken cancellationToken);
-        Task<GameDetailsResponseDto> GetGameDetailsByRawgIdAsync(int rawgId, CancellationToken cancellationToken);
-        //Task<PaginatedFeedResponse> GetGameFeedAsync(int page, int pageSize, string ordering);
-        Task<PaginatedFeedResponse> GetGamesAsync(
+        Task<Game?> GetGameByCatalogIdAsync(int catalogId, CancellationToken cancellationToken);
+        Task<GameDetailsResponseDto> GetGameDetailsByCatalogIdAsync(int catalogId, CancellationToken cancellationToken);
+        Task<PaginatedFeedResponse> GetGamesByCatalogAsync(
             int page,
             int pageSize,
             string? keyword,

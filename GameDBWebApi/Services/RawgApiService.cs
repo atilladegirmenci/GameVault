@@ -1,4 +1,4 @@
-﻿using GameDBWebApi.Constants;
+using GameDBWebApi.Constants;
 using GameDBWebApi.DTOs.Game;
 using GameDBWebApi.Entites;
 using GameDBWebApi.Exceptions;
@@ -22,22 +22,22 @@ namespace GameDBWebApi.Services
             _logger = logger;
             _apiKey = _configuration["RawgApiKey"]!;
         }
-        public async Task<Game?> GetGameByRawgIdAsync(int rawgId, CancellationToken cancellationToken)
+        public async Task<Game?> GetGameByCatalogIdAsync(int catalogId, CancellationToken cancellationToken)
         {
-            _logger.LogInformation($"fetching game details for RawgId: {rawgId}");
+            _logger.LogInformation($"fetching game details for CatalogId: {catalogId}");
 
-            var requestUrl = $"https://api.rawg.io/api/games/{rawgId}?key={_apiKey}";
+            var requestUrl = $"https://api.rawg.io/api/games/{catalogId}?key={_apiKey}";
             var response = await SendRequestAsync(requestUrl, cancellationToken); //TODO: consider using the using block for the response to ensure it is disposed of properly.
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                _logger.LogWarning("Game with RawgId {RawgId} was not found on RAWG API.", rawgId);
-                throw new NotFoundException(string.Format(ErrorMessages.External.GameNotFoundTemplate, rawgId));
+                _logger.LogWarning("Game with RawgId {RawgId} was not found on RAWG API.", catalogId);
+                throw new NotFoundException(string.Format(ErrorMessages.External.GameNotFoundTemplate, catalogId));
             }
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError("RAWG API request failed with status code: {StatusCode} for RawgId: {RawgId}", response.StatusCode, rawgId);
+                _logger.LogError("RAWG API request failed with status code: {StatusCode} for RawgId: {RawgId}", response.StatusCode, catalogId);
                 throw new ExternalServiceException(string.Format(ErrorMessages.External.ExternalApiErrorFetchingGameDetailsTemplate, response.StatusCode));
             }
 
@@ -51,7 +51,7 @@ namespace GameDBWebApi.Services
 
             return new Game
             {
-                RawgId = rawgId,
+                CatalogId = catalogId,
                 Title = rawgData.Name,
                 ImageUrl = rawgData.BackgroundImage,
                 ReleaseDate = rawgData.Released,
@@ -59,23 +59,23 @@ namespace GameDBWebApi.Services
             };
 
         }
-        public async Task<GameDetailsResponseDto> GetGameDetailsByRawgIdAsync(
-            int rawgId,
+        public async Task<GameDetailsResponseDto> GetGameDetailsByCatalogIdAsync(
+            int catalogId,
             CancellationToken cancellationToken)
         {
-            var requestUrl = $"https://api.rawg.io/api/games/{rawgId}?key={_apiKey}";
+            var requestUrl = $"https://api.rawg.io/api/games/{catalogId}?key={_apiKey}";
 
             var response = await SendRequestAsync(requestUrl, cancellationToken);
 
             if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
             {
-                _logger.LogWarning("Game details with RawgId {RawgId} were not found on RAWG API.", rawgId);
-                throw new NotFoundException(string.Format(ErrorMessages.External.GameDetailsNotFoundTemplate, rawgId));
+                _logger.LogWarning("Game details with RawgId {RawgId} were not found on RAWG API.", catalogId);
+                throw new NotFoundException(string.Format(ErrorMessages.External.GameDetailsNotFoundTemplate, catalogId));
             }
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogError("RAWG API request failed with status code: {StatusCode} for RawgId: {RawgId}", response.StatusCode, rawgId);
+                _logger.LogError("RAWG API request failed with status code: {StatusCode} for RawgId: {RawgId}", response.StatusCode, catalogId);
                 throw new ExternalServiceException(string.Format(ErrorMessages.External.ExternalApiErrorFetchingGameDetailsTemplate, response.StatusCode));
             }
 
@@ -84,12 +84,12 @@ namespace GameDBWebApi.Services
 
             if (rawgData == null)
             {
-                throw new ExternalServiceException(string.Format(ErrorMessages.External.FailedToDeserializeGameDetailsTemplate, rawgId));
+                throw new ExternalServiceException(string.Format(ErrorMessages.External.FailedToDeserializeGameDetailsTemplate, catalogId));
             }
 
             return new GameDetailsResponseDto
             {
-                RawgId = rawgData.Id,
+                CatalogId = rawgData.Id,
                 Title = rawgData.Name,
                 Description = rawgData.Description,
                 ImageUrl = rawgData.BackgroundImage,
@@ -109,7 +109,7 @@ namespace GameDBWebApi.Services
 
         }
 
-        public async Task<PaginatedFeedResponse> GetGamesAsync(
+        public async Task<PaginatedFeedResponse> GetGamesByCatalogAsync(
             int page,
             int pageSize,
             string? keyword,
@@ -150,7 +150,7 @@ namespace GameDBWebApi.Services
 
             var games = rawgData.Results.Select(g => new GameCardDto
             {
-                RawgId = g.Id,
+                CatalogId = g.Id,
                 Title = g.Name,
                 ImageUrl = g.BackgroundImage,
                 Score = (short)(g.Metacritic ?? 0) // Convert nullable int to short, defaulting to 0 if null

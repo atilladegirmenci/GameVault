@@ -1,4 +1,4 @@
-﻿namespace GameDBWebApi.DTOs.Review
+namespace GameDBWebApi.DTOs.Review
 {
     public class CreateReviewRequestDto
     {

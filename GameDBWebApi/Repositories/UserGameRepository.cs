@@ -1,4 +1,4 @@
-﻿using GameDBWebApi.Data;
+using GameDBWebApi.Data;
 using GameDBWebApi.DTOs;
 using GameDBWebApi.Entites;
 using Microsoft.EntityFrameworkCore;
@@ -49,11 +49,11 @@ namespace GameDBWebApi.Repositories
             return new PaginatedList<UserGame>(items, count, page, pageSize); 
         }
 
-        public async  Task<List<UserGame>> GetStatusesByRawgIdsAsync(int userId, List<int> rawgIds)
+        public async  Task<List<UserGame>> GetStatusesByCatalogIdsAsync(int userId, List<int> catalogIds)
         {
             return await _context.UserGames
                                 .Include(ug => ug.Game)
-                                .Where(ug => ug.UserId == userId && rawgIds.Contains(ug.Game.RawgId))
+                                .Where(ug => ug.UserId == userId && catalogIds.Contains(ug.Game.CatalogId))
                                 .ToListAsync();
         }
     }

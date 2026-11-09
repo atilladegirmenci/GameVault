@@ -8,9 +8,9 @@ namespace GameDBWebApi.DTOs.Validators
     {
         public UpsertGameStatusDtoValidator()
         {
-            RuleFor(x => x.RawgId)
+            RuleFor(x => x.CatalogId)
                 .GreaterThan(0)
-                .WithMessage("A valid RAWG game ID is required.");
+                .WithMessage("A valid game catalog ID is required.");
 
             RuleFor(x => x.Name)
                 .NotEmpty()

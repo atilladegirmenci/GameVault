@@ -1,4 +1,4 @@
-﻿using GameDBWebApi.DTOs.User;
+using GameDBWebApi.DTOs.User;
 using GameDBWebApi.Entites;
 
 namespace GameDBWebApi.Services

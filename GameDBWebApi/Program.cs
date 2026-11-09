@@ -22,8 +22,6 @@ var builder = WebApplication.CreateBuilder(args);
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException(ErrorMessages.Auth.JwtSecretKeyNotConfigured);
 
-var rawgApiKey = builder.Configuration["RawgApiKey"] ?? throw new InvalidOperationException(ErrorMessages.External.RawgApiKeyNotConfigured);
-
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -122,9 +120,9 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmailService, MailKitEmailService>();
 builder.Services.AddScoped<IGameService, GameService>();
 builder.Services
-    .AddHttpClient<IGameCatalogService, RawgApiService>(client =>
+    .AddHttpClient<ITwitchTokenService, TwitchTokenService>(client =>
     {
-        client.BaseAddress = new Uri("https://api.rawg.io/");
+        client.BaseAddress = new Uri("https://id.twitch.tv/");
     })
     .AddStandardResilienceHandler(options =>
     {
@@ -140,6 +138,28 @@ builder.Services
         options.CircuitBreaker.MinimumThroughput = 5;
         options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
     });
+builder.Services
+    .AddHttpClient<IGameCatalogService, IGDBApiService>(client =>
+    {
+        client.BaseAddress = new Uri("https://api.igdb.com/v4/");
+    })
+    .AddStandardResilienceHandler(options =>
+    {
+        options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(30);
+        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(10);
+        options.Retry.MaxRetryAttempts = 3;
+        options.Retry.Delay = TimeSpan.FromMilliseconds(200);
+        options.Retry.BackoffType = DelayBackoffType.Exponential;
+        options.Retry.UseJitter = true;
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
+        options.CircuitBreaker.FailureRatio = 0.5;
+        options.CircuitBreaker.MinimumThroughput = 5;
+        options.CircuitBreaker.BreakDuration = TimeSpan.FromSeconds(30);
+    });
+builder.Services.AddHttpClient<RawgApiService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.rawg.io/");
+});
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IUserListService, UserListService>();

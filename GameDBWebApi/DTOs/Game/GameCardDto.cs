@@ -1,10 +1,10 @@
-﻿using GameDBWebApi.Entites;
+using GameDBWebApi.Entites;
 
 namespace GameDBWebApi.DTOs.Game
 {
     public class GameCardDto
     {
-        public int RawgId { get; set; }
+        public int CatalogId { get; set; }
         public string Title { get; set; } = null!;
         public string ImageUrl { get; set; } = null!;
         public short Score { get; set; }

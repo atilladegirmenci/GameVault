@@ -1,4 +1,4 @@
-﻿using GameDBWebApi.Data;
+using GameDBWebApi.Data;
 
 namespace GameDBWebApi.Repositories
 {
