@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using GameDBWebApi.Configuration;
+using GameDBWebApi.Exceptions;
 using System.Collections.Generic;
 
 namespace GameDBWebApi.Tests
@@ -36,7 +37,7 @@ namespace GameDBWebApi.Tests
             _mockUnitOfWork.Setup(uow => uow.Users).Returns(_mockUserRepository.Object);
             _mockUnitOfWork.Setup(uow => uow.EmailVerificationTokens).Returns(_mockTokenRepository.Object);
 
-            var inMemorySettings = new Dictionary<string, string>
+            var inMemorySettings = new Dictionary<string, string?>
             {
                 {"JwtSettings:SecretKey", "SuperSecretTestKeyThatIsAtLeast32CharsLong123!"},
                 {"JwtSettings:Issuer", "TestApi"},
@@ -155,7 +156,7 @@ namespace GameDBWebApi.Tests
 
             // Act & Assert
             var act = async () => await _authService.LoginAsync(loginRequest);
-            await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("Invalid username or password.");
+            await act.Should().ThrowAsync<UnauthorizedException>().WithMessage("Invalid username or password.");
         }
 
         [Fact]
@@ -174,7 +175,7 @@ namespace GameDBWebApi.Tests
             var act = async () => await _authService.LoginAsync(loginRequest);
 
             // Assert
-            await act.Should().ThrowAsync<UnauthorizedAccessException>().WithMessage("Invalid username or password.");
+            await act.Should().ThrowAsync<UnauthorizedException>().WithMessage("Invalid username or password.");
         }
 
         [Fact]
@@ -198,7 +199,7 @@ namespace GameDBWebApi.Tests
 
             var act = async () => await _authService.LoginAsync(loginRequest);
 
-            await act.Should().ThrowAsync<UnauthorizedAccessException>()
+            await act.Should().ThrowAsync<UnauthorizedException>()
                 .WithMessage("Email address has not been verified.");
             _mockUnitOfWork.Verify(uow => uow.CompleteAsync(), Times.Never);
         }
