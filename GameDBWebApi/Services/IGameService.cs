@@ -15,6 +15,7 @@ public interface IGameService
         string ordering,
         CancellationToken cancellationToken);
     Task<PaginatedFeedResponse> SearchGamesAsync(
+        int? userId,
         int page,
         int pageSize,
         string keyword,
