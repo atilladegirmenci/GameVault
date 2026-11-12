@@ -72,7 +72,8 @@ namespace GameDBWebApi.Tests
             _mockUserRepository.Setup(repo => repo.EmailExistsAsync(registerRequest.Email)).ReturnsAsync(false);
 
             // Act
-            Func<Task> act = async () => await _authService.RegisterAsync(registerRequest);
+            using var cancellationSource = new CancellationTokenSource();
+            Func<Task> act = async () => await _authService.RegisterAsync(registerRequest, cancellationSource.Token);
 
             // Assert
             await act.Should().NotThrowAsync();
@@ -82,7 +83,8 @@ namespace GameDBWebApi.Tests
                 service => service.SendVerificationEmailAsync(
                     registerRequest.Email,
                     It.IsAny<string>(),
-                    It.IsAny<string>()),
+                    It.IsAny<string>(),
+                    cancellationSource.Token),
                 Times.Once);
         }
 
@@ -99,7 +101,7 @@ namespace GameDBWebApi.Tests
             _mockUserRepository.Setup(repo => repo.EmailExistsAsync(registerRequest.Email)).ReturnsAsync(true);
 
             // Act
-            Func<Task> act = async () => await _authService.RegisterAsync(registerRequest);
+            Func<Task> act = async () => await _authService.RegisterAsync(registerRequest, CancellationToken.None);
 
             // Assert
             await act.Should().ThrowAsync<Exception>().WithMessage("Email already exists.");

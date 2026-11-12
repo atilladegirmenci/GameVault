@@ -26,7 +26,33 @@ public class MailKitEmailServiceTests
         var service = new MailKitEmailService(settings, TestDoubles.Logger<MailKitEmailService>());
 
         await service.Invoking(x => x.SendVerificationEmailAsync(
-                "to@example.com", "User", "https://example.com/verify"))
+                "to@example.com", "User", "https://example.com/verify", CancellationToken.None))
             .Should().ThrowAsync<ExternalServiceException>();
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task WhenCancellationIsRequestedBeforeSendingPropagatesCancellation()
+    {
+        var settings = Options.Create(new EmailSettings
+        {
+            SmtpHost = "127.0.0.1",
+            SmtpPort = 1,
+            EnableSsl = false,
+            FromName = "GameVault",
+            FromAddress = "from@example.com",
+            Username = "user",
+            Password = "password"
+        });
+        var service = new MailKitEmailService(settings, TestDoubles.Logger<MailKitEmailService>());
+        using var cancellationSource = new CancellationTokenSource();
+        cancellationSource.Cancel();
+
+        await service.Invoking(x => x.SendVerificationEmailAsync(
+                "to@example.com",
+                "User",
+                "https://example.com/verify",
+                cancellationSource.Token))
+            .Should().ThrowAsync<OperationCanceledException>();
     }
 }
