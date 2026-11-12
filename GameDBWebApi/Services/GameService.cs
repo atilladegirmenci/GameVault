@@ -171,7 +171,7 @@ namespace GameDBWebApi.Services
 
             return new PaginatedList<GameCardDto>(dtoList, feed.TotalCount, page, pageSize);
         }
-
+        //TODO: is in library and status shoul be updated brefore returning the game details, so that the user sees the latest status in the game details page.
         public async Task<PaginatedFeedResponse> SearchGamesAsync(
             int page,
             int pageSize,

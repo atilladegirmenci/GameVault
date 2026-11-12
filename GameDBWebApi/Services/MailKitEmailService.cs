@@ -12,6 +12,7 @@ public sealed class MailKitEmailService : IEmailService
     private readonly EmailSettings _settings;
     private readonly ILogger<MailKitEmailService> _logger;
 
+
     public MailKitEmailService(
         IOptions<EmailSettings> options,
         ILogger<MailKitEmailService> logger)
@@ -20,7 +21,7 @@ public sealed class MailKitEmailService : IEmailService
         _logger = logger;
     }
 
-    public async Task SendVerificationEmailAsync(
+    public async Task SendVerificationEmailAsync( //TODO: use cancel token for retry and timeout
         string recipientEmail,
         string recipientName,
         string verificationUrl)
