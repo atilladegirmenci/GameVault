@@ -80,7 +80,9 @@ namespace GameDBWebApi.Controllers
             if (pageSize > 40) pageSize = 40;
             if (page < 1) page = 1;
 
+            int? userId = GetOptionalUserId();
             var searchResults = await _gameService.SearchGamesAsync(
+                userId,
                 page,
                 pageSize,
                 keyword,

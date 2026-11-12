@@ -171,19 +171,42 @@ namespace GameDBWebApi.Services
 
             return new PaginatedList<GameCardDto>(dtoList, feed.TotalCount, page, pageSize);
         }
-        //TODO: is in library and status shoul be updated brefore returning the game details, so that the user sees the latest status in the game details page.
         public async Task<PaginatedFeedResponse> SearchGamesAsync(
+            int? userId,
             int page,
             int pageSize,
             string keyword,
             CancellationToken cancellationToken)
         {
-            return await _catalogApiService.GetGamesByCatalogAsync(
+            var feed = await _catalogApiService.GetGamesByCatalogAsync(
                 page,
                 pageSize,
                 keyword,
                 "-added",
                 cancellationToken);
+
+            if (userId.HasValue && feed.Games.Count > 0)
+            {
+                var catalogIds = feed.Games.Select(game => game.CatalogId).ToList();
+                var userGameStatuses = await _unitOfWork.UserGames.GetStatusesByCatalogIdsAsync(
+                    userId.Value,
+                    catalogIds);
+                var statusByCatalogId = userGameStatuses.ToDictionary(
+                    status => status.Game.CatalogId,
+                    status => status);
+
+                foreach (var game in feed.Games)
+                {
+                    if (statusByCatalogId.TryGetValue(game.CatalogId, out var status))
+                    {
+                        game.GameId = status.GameId;
+                        game.Status = status.Status;
+                        game.UpdatedDate = status.UpdatedDate;
+                    }
+                }
+            }
+
+            return feed;
         }
 
 

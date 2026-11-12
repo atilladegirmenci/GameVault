@@ -51,6 +51,7 @@ public class GameServiceTests
 
         result.IsInMyLibrary.Should().BeTrue();
         result.MyStatus.Should().Be(GameStatus.Playing);
+        userGames.Verify(x => x.GetByUserIDAndGameIdAsync(5, 7), Times.Once);
     }
 
     [Fact]
@@ -71,17 +72,43 @@ public class GameServiceTests
     }
 
     [Fact]
-    public async Task SearchGamesAsync_UsesNewestOrdering()
+    public async Task SearchGamesAsync_UsesNewestOrderingAndAddsLibraryStatus()
     {
         var catalog = new Mock<IGameCatalogService>();
-        var expected = new PaginatedFeedResponse { CurrentPage = 1 };
+        var userGames = new Mock<IUserGameRepository>();
+        var expected = new PaginatedFeedResponse
+        {
+            CurrentPage = 1,
+            Games =
+            [
+                new GameCardDto { CatalogId = 42, Title = "Zelda", ImageUrl = "image" }
+            ]
+        };
         catalog.Setup(x => x.GetGamesByCatalogAsync(1, 10, "zelda", "-added", It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
+        userGames.Setup(x => x.GetStatusesByCatalogIdsAsync(
+                5,
+                It.Is<List<int>>(ids => ids.SequenceEqual(new List<int> { 42 }))))
+            .ReturnsAsync(
+            [
+                new UserGame
+                {
+                    GameId = 7,
+                    Status = GameStatus.Playing,
+                    UpdatedDate = new DateTime(2026, 11, 12),
+                    Game = new Game { CatalogId = 42 }
+                }
+            ]);
         var service = new GameService(
-            TestDoubles.UnitOfWork().Object, catalog.Object, TestDoubles.Logger<GameService>());
+            TestDoubles.UnitOfWork(userGames: userGames).Object,
+            catalog.Object,
+            TestDoubles.Logger<GameService>());
 
-        var result = await service.SearchGamesAsync(1, 10, "zelda", CancellationToken.None);
+        var result = await service.SearchGamesAsync(5, 1, 10, "zelda", CancellationToken.None);
 
         result.Should().BeSameAs(expected);
+        result.Games[0].GameId.Should().Be(7);
+        result.Games[0].Status.Should().Be(GameStatus.Playing);
+        result.Games[0].UpdatedDate.Should().Be(new DateTime(2026, 11, 12));
     }
 }
