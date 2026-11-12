@@ -21,11 +21,14 @@ public sealed class MailKitEmailService : IEmailService
         _logger = logger;
     }
 
-    public async Task SendVerificationEmailAsync( //TODO: use cancel token for retry and timeout
+    public async Task SendVerificationEmailAsync(
         string recipientEmail,
         string recipientName,
-        string verificationUrl)
+        string verificationUrl,
+        CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(_settings.FromName, _settings.FromAddress));
         message.To.Add(new MailboxAddress(recipientName, recipientEmail));
@@ -41,10 +44,15 @@ public sealed class MailKitEmailService : IEmailService
             await client.ConnectAsync(
                 _settings.SmtpHost,
                 _settings.SmtpPort,
-                _settings.EnableSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto);
-            await client.AuthenticateAsync(_settings.Username, _settings.Password);
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
+                _settings.EnableSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.Auto,
+                cancellationToken);
+            await client.AuthenticateAsync(_settings.Username, _settings.Password, cancellationToken);
+            await client.SendAsync(message, cancellationToken);
+            await client.DisconnectAsync(true, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
