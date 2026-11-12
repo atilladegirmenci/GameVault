@@ -107,7 +107,7 @@ namespace GameDBWebApi.Services
                 Message = ErrorMessages.Auth.TokenRefreshedSuccessfully
             };
         }
-        public async Task RegisterAsync(RegisterRequestDto request)
+        public async Task RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken)
         {
 
             _logger.LogInformation("Attempting to register user: {Username}, {Email}", request.UserName, request.Email);
@@ -133,13 +133,13 @@ namespace GameDBWebApi.Services
 
             await _unitOfWork.Users.AddAsync(newUser);
             await _unitOfWork.CompleteAsync(); 
-            await SendVerificationEmailAsync(newUser);
+            await SendVerificationEmailAsync(newUser, cancellationToken);
 
             _logger.LogInformation("User {Username} registered successfully.", request.UserName);
 
         }
 
-        public async Task ResendVerificationEmailAsync(string email)
+        public async Task ResendVerificationEmailAsync(string email, CancellationToken cancellationToken)
         {
             var user = await _unitOfWork.Users.GetByUserMailAsync(email);
             if (user == null)
@@ -152,7 +152,7 @@ namespace GameDBWebApi.Services
                 return;
             }
 
-            await SendVerificationEmailAsync(user);
+            await SendVerificationEmailAsync(user, cancellationToken);
         }
 
         public async Task VerifyEmailAsync(string token)
@@ -177,7 +177,7 @@ namespace GameDBWebApi.Services
             await _unitOfWork.CompleteAsync();
         }
 
-        private async Task SendVerificationEmailAsync(User user)
+        private async Task SendVerificationEmailAsync(User user, CancellationToken cancellationToken)
         {
             _logger.LogInformation("attempting to send verification email to user: {UserEmail}", user.UserEmail);
             var rawToken = WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
@@ -196,7 +196,11 @@ namespace GameDBWebApi.Services
                 _emailSettings.VerificationUrl,
                 "token",
                 rawToken);
-            await _emailService.SendVerificationEmailAsync(user.UserEmail, user.UserName, verificationUrl);
+            await _emailService.SendVerificationEmailAsync(
+                user.UserEmail,
+                user.UserName,
+                verificationUrl,
+                cancellationToken);
         }
       
         public async Task LogoutAsync(int userId)

@@ -31,17 +31,21 @@ namespace GameDBWebApi.Controllers
         
         [AllowAnonymous]
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequestDto request)
+        public async Task<IActionResult> Register(
+            [FromBody] RegisterRequestDto request,
+            CancellationToken cancellationToken)
         {
-            await _authService.RegisterAsync(request);
+            await _authService.RegisterAsync(request, cancellationToken);
             return Ok(new { message = "Registration successful" });
         }
 
         [AllowAnonymous]
         [HttpPost("resend-verification")]
-        public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationRequestDto request)
+        public async Task<IActionResult> ResendVerification(
+            [FromBody] ResendVerificationRequestDto request,
+            CancellationToken cancellationToken)
         {
-            await _authService.ResendVerificationEmailAsync(request.Email);
+            await _authService.ResendVerificationEmailAsync(request.Email, cancellationToken);
             return Ok(new { message = "If the account exists and is unverified, a verification email has been sent." });
         }
 
