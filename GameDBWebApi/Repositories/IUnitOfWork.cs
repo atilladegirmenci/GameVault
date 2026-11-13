@@ -7,7 +7,7 @@ namespace GameDBWebApi.Repositories
         IUserGameRepository UserGames { get; }
         IReviewRepository Reviews { get; }
         IUserListRepository UserLists { get; }
-        IEmailVerificationTokenRepository EmailVerificationTokens { get; }
+        IAccountTokenRepository AccountTokens { get; }
         Task<int> CompleteAsync();
     }
 }

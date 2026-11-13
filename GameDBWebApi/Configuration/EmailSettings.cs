@@ -13,4 +13,6 @@ public sealed class EmailSettings
     public bool EnableSsl { get; set; } = true;
     public int VerificationTokenLifetimeMinutes { get; set; } = 1440;
     public string VerificationUrl { get; set; } = string.Empty;
+    public int PasswordResetTokenLifetimeMinutes { get; set; } = 30;
+    public string PasswordResetUrl { get; set; } = string.Empty;
 }
