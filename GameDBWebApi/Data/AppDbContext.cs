@@ -68,7 +68,7 @@ namespace GameDBWebApi.Data
         public DbSet<UserList> UserLists { get; set; }
         public DbSet<UserListGame> UserListGames { get; set; }
         public DbSet<Review> Reviews { get; set; }
-        public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; }
+        public DbSet<AccountToken> AccountTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -100,12 +100,16 @@ namespace GameDBWebApi.Data
                       .HasDefaultValueSql("GETUTCDATE()");
             });
 
-            modelBuilder.Entity<EmailVerificationToken>(entity =>
+            modelBuilder.Entity<AccountToken>(entity =>
             {
                 entity.ToTable("EmailVerificationTokens");
                 entity.HasKey(token => token.Id);
                 entity.Property(token => token.TokenHash).IsRequired().HasMaxLength(64);
                 entity.HasIndex(token => token.TokenHash).IsUnique();
+                entity.Property(token => token.Purpose)
+                    .HasConversion<string>()
+                    .IsRequired()
+                    .HasMaxLength(50);
                 entity.Property(token => token.ExpiresAtUtc).IsRequired();
                 entity.Property(token => token.CreatedAt)
                     .IsRequired()

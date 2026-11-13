@@ -73,7 +73,9 @@ builder.Services
     .Validate(settings => !string.IsNullOrWhiteSpace(settings.Password), "EmailSettings:Password is required.")
     .Validate(settings => !string.IsNullOrWhiteSpace(settings.FromAddress), "EmailSettings:FromAddress is required.")
     .Validate(settings => !string.IsNullOrWhiteSpace(settings.VerificationUrl), "EmailSettings:VerificationUrl is required.")
+    .Validate(settings => !string.IsNullOrWhiteSpace(settings.PasswordResetUrl), "EmailSettings:PasswordResetUrl is required.")
     .Validate(settings => settings.VerificationTokenLifetimeMinutes > 0, "EmailSettings:VerificationTokenLifetimeMinutes must be greater than zero.")
+    .Validate(settings => settings.PasswordResetTokenLifetimeMinutes > 0, "EmailSettings:PasswordResetTokenLifetimeMinutes must be greater than zero.")
     .ValidateOnStart();
 
 builder.Host.UseSerilog((context, configuration) =>

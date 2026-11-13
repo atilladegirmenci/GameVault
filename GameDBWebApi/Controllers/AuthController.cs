@@ -1,4 +1,5 @@
 using GameDBWebApi.DTOs.Auth;
+using GameDBWebApi.Constants;
 using GameDBWebApi.Exceptions;
 using GameDBWebApi.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -51,10 +52,32 @@ namespace GameDBWebApi.Controllers
 
         [AllowAnonymous]
         [HttpGet("verify-email")]
-        public async Task<IActionResult> VerifyEmail([FromQuery] string token)
+        public async Task<IActionResult> VerifyEmail(
+            [FromQuery] string token,
+            CancellationToken cancellationToken)
         {
-            await _authService.VerifyEmailAsync(token);
+            await _authService.VerifyEmailAsync(token, cancellationToken);
             return Ok(new { message = "Email verified successfully." });
+        }
+
+        [AllowAnonymous]
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(
+            [FromBody] ForgotPasswordRequestDto request,
+            CancellationToken cancellationToken)
+        {
+            await _authService.RequestPasswordResetAsync(request, cancellationToken);
+            return Ok(new { message = ErrorMessages.Auth.PasswordResetRequested });
+        }
+
+        [AllowAnonymous]
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(
+            [FromBody] ResetPasswordRequestDto request,
+            CancellationToken cancellationToken)
+        {
+            await _authService.ResetPasswordAsync(request, cancellationToken);
+            return Ok(new { message = ErrorMessages.Auth.PasswordChangedSuccessfully });
         }
 
         [AllowAnonymous]
@@ -80,6 +103,23 @@ namespace GameDBWebApi.Controllers
 
             await _authService.LogoutAsync(userId);
             return Ok(new { message = "Logout successful" });
+        }
+
+        [Authorize]
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword(
+            [FromBody] ChangePasswordRequestDto request,
+            CancellationToken cancellationToken)
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized(new { message = ErrorMessages.Auth.InvalidTokenClaims });
+            }
+
+            await _authService.ChangePasswordAsync(userId, request, cancellationToken);
+            return Ok(new { message = ErrorMessages.Auth.PasswordChangedSuccessfully });
         }
     }
 }

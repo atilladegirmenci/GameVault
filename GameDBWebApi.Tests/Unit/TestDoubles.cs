@@ -12,7 +12,7 @@ internal static class TestDoubles
         Mock<IUserGameRepository>? userGames = null,
         Mock<IReviewRepository>? reviews = null,
         Mock<IUserListRepository>? userLists = null,
-        Mock<IEmailVerificationTokenRepository>? tokens = null)
+        Mock<IAccountTokenRepository>? tokens = null)
     {
         var unitOfWork = new Mock<IUnitOfWork>();
         unitOfWork.SetupGet(x => x.Users).Returns((users ?? new Mock<IUserRepository>()).Object);
@@ -20,8 +20,8 @@ internal static class TestDoubles
         unitOfWork.SetupGet(x => x.UserGames).Returns((userGames ?? new Mock<IUserGameRepository>()).Object);
         unitOfWork.SetupGet(x => x.Reviews).Returns((reviews ?? new Mock<IReviewRepository>()).Object);
         unitOfWork.SetupGet(x => x.UserLists).Returns((userLists ?? new Mock<IUserListRepository>()).Object);
-        unitOfWork.SetupGet(x => x.EmailVerificationTokens)
-            .Returns((tokens ?? new Mock<IEmailVerificationTokenRepository>()).Object);
+        unitOfWork.SetupGet(x => x.AccountTokens)
+            .Returns((tokens ?? new Mock<IAccountTokenRepository>()).Object);
         return unitOfWork;
     }
 

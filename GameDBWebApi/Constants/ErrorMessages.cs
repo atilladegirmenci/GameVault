@@ -24,6 +24,10 @@ namespace GameDBWebApi.Constants
             public const string JwtSecretKeyNotConfigured = "JWT SecretKey is not configured.";
             public const string EmailNotConfirmed = "Email address has not been verified.";
             public const string InvalidOrExpiredEmailVerificationToken = "Invalid or expired email verification token.";
+            public const string InvalidOrExpiredPasswordResetToken = "Invalid or expired password reset token.";
+            public const string CurrentPasswordIncorrect = "Current password is incorrect.";
+            public const string PasswordResetRequested = "If the account exists, a password reset email has been sent.";
+            public const string PasswordChangedSuccessfully = "Password changed successfully.";
         }
 
         public static class User
