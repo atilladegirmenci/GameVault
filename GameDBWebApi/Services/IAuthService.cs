@@ -11,6 +11,16 @@ namespace GameDBWebApi.Services
 
         Task LogoutAsync(int userId);
         Task ResendVerificationEmailAsync(string email, CancellationToken cancellationToken);
-        Task VerifyEmailAsync(string token);
+        Task VerifyEmailAsync(string token, CancellationToken cancellationToken);
+        Task RequestPasswordResetAsync(
+            ForgotPasswordRequestDto request,
+            CancellationToken cancellationToken);
+        Task ResetPasswordAsync(
+            ResetPasswordRequestDto request,
+            CancellationToken cancellationToken);
+        Task ChangePasswordAsync(
+            int userId,
+            ChangePasswordRequestDto request,
+            CancellationToken cancellationToken);
     }
 }

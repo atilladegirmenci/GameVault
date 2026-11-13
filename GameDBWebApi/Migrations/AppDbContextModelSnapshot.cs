@@ -22,7 +22,7 @@ namespace GameDBWebApi.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("GameDBWebApi.Entites.EmailVerificationToken", b =>
+            modelBuilder.Entity("GameDBWebApi.Entites.AccountToken", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -37,6 +37,11 @@ namespace GameDBWebApi.Migrations
 
                     b.Property<DateTime>("ExpiresAtUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("TokenHash")
                         .IsRequired()
@@ -252,7 +257,7 @@ namespace GameDBWebApi.Migrations
                     b.ToTable("UserListGames", (string)null);
                 });
 
-            modelBuilder.Entity("GameDBWebApi.Entites.EmailVerificationToken", b =>
+            modelBuilder.Entity("GameDBWebApi.Entites.AccountToken", b =>
                 {
                     b.HasOne("GameDBWebApi.Entites.User", "User")
                         .WithMany()

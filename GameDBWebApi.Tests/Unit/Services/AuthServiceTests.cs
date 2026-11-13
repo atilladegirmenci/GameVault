@@ -20,7 +20,7 @@ namespace GameDBWebApi.Tests
     {
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
         private readonly Mock<IUserRepository> _mockUserRepository;
-        private readonly Mock<IEmailVerificationTokenRepository> _mockTokenRepository;
+        private readonly Mock<IAccountTokenRepository> _mockTokenRepository;
         private readonly Mock<IEmailService> _mockEmailService;
         private readonly Mock<ILogger<AuthService>> _mockLogger;
         private readonly AuthService _authService;
@@ -30,12 +30,12 @@ namespace GameDBWebApi.Tests
         {
             _mockUnitOfWork = new Mock<IUnitOfWork>();
             _mockUserRepository = new Mock<IUserRepository>();
-            _mockTokenRepository = new Mock<IEmailVerificationTokenRepository>();
+            _mockTokenRepository = new Mock<IAccountTokenRepository>();
             _mockEmailService = new Mock<IEmailService>();
             _mockLogger = new Mock<ILogger<AuthService>>();
 
             _mockUnitOfWork.Setup(uow => uow.Users).Returns(_mockUserRepository.Object);
-            _mockUnitOfWork.Setup(uow => uow.EmailVerificationTokens).Returns(_mockTokenRepository.Object);
+            _mockUnitOfWork.Setup(uow => uow.AccountTokens).Returns(_mockTokenRepository.Object);
 
             var inMemorySettings = new Dictionary<string, string?>
             {
@@ -107,6 +107,94 @@ namespace GameDBWebApi.Tests
             await act.Should().ThrowAsync<Exception>().WithMessage("Email already exists.");
             _mockUserRepository.Verify(repo => repo.AddAsync(It.IsAny<User>()), Times.Never);
             _mockUnitOfWork.Verify(uow => uow.CompleteAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task RequestPasswordResetAsync_ForExistingUserCreatesTokenAndSendsEmail()
+        {
+            var user = new User
+            {
+                Id = 7,
+                UserName = "testuser",
+                UserEmail = "testuser@example.com"
+            };
+            var request = new ForgotPasswordRequestDto { Email = user.UserEmail };
+            _mockUserRepository.Setup(repository => repository.GetByUserMailAsync(user.UserEmail))
+                .ReturnsAsync(user);
+
+            await _authService.RequestPasswordResetAsync(request, CancellationToken.None);
+
+            _mockTokenRepository.Verify(repository => repository.AddAsync(
+                It.Is<AccountToken>(token =>
+                    token.UserId == user.Id &&
+                    token.Purpose == AccountTokenPurpose.PasswordReset),
+                It.IsAny<CancellationToken>()), Times.Once);
+            _mockEmailService.Verify(service => service.SendPasswordResetEmailAsync(
+                user.UserEmail,
+                user.UserName,
+                It.IsAny<string>(),
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task ResetPasswordAsync_ValidTokenUpdatesPasswordAndRevokesRefreshToken()
+        {
+            var user = new User
+            {
+                Id = 7,
+                HashPassword = BCrypt.Net.BCrypt.HashPassword("OldPassword1"),
+                RefreshTokenFingerprint = "refresh-token",
+                RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(1)
+            };
+            var resetToken = new AccountToken
+            {
+                User = user,
+                Purpose = AccountTokenPurpose.PasswordReset,
+                ExpiresAtUtc = DateTime.UtcNow.AddMinutes(10)
+            };
+            _mockTokenRepository.Setup(repository => repository.GetByHashAsync(
+                    It.IsAny<string>(),
+                    AccountTokenPurpose.PasswordReset,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(resetToken);
+
+            await _authService.ResetPasswordAsync(
+                new ResetPasswordRequestDto
+                {
+                    Token = "reset-token",
+                    NewPassword = "NewPassword1",
+                    ConfirmPassword = "NewPassword1"
+                },
+                CancellationToken.None);
+
+            BCrypt.Net.BCrypt.Verify("NewPassword1", user.HashPassword).Should().BeTrue();
+            user.RefreshTokenFingerprint.Should().BeNull();
+            resetToken.UsedAtUtc.Should().NotBeNull();
+        }
+
+        [Fact]
+        public async Task ChangePasswordAsync_WithIncorrectCurrentPasswordThrows()
+        {
+            var user = new User
+            {
+                Id = 7,
+                HashPassword = BCrypt.Net.BCrypt.HashPassword("OldPassword1")
+            };
+            _mockUserRepository.Setup(repository => repository.GetByIdAsync(user.Id))
+                .ReturnsAsync(user);
+
+            Func<Task> act = () => _authService.ChangePasswordAsync(
+                user.Id,
+                new ChangePasswordRequestDto
+                {
+                    CurrentPassword = "WrongPassword1",
+                    NewPassword = "NewPassword1",
+                    ConfirmPassword = "NewPassword1"
+                },
+                CancellationToken.None);
+
+            await act.Should().ThrowAsync<UnauthorizedException>()
+                .WithMessage("Current password is incorrect.");
         }
 
         [Fact]

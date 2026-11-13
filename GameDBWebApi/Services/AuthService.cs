@@ -155,7 +155,7 @@ namespace GameDBWebApi.Services
             await SendVerificationEmailAsync(user, cancellationToken);
         }
 
-        public async Task VerifyEmailAsync(string token)
+        public async Task VerifyEmailAsync(string token, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(token))
             {
@@ -163,7 +163,10 @@ namespace GameDBWebApi.Services
             }
 
             var tokenHash = ComputeTokenFingerprint(token);
-            var verificationToken = await _unitOfWork.EmailVerificationTokens.GetByHashAsync(tokenHash);
+            var verificationToken = await _unitOfWork.AccountTokens.GetByHashAsync(
+                tokenHash,
+                AccountTokenPurpose.EmailVerification,
+                cancellationToken);
 
             if (verificationToken == null ||
                 verificationToken.UsedAtUtc.HasValue ||
@@ -181,15 +184,19 @@ namespace GameDBWebApi.Services
         {
             _logger.LogInformation("attempting to send verification email to user: {UserEmail}", user.UserEmail);
             var rawToken = WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
-            await _unitOfWork.EmailVerificationTokens.InvalidateActiveTokensAsync(user.Id);
-            var token = new EmailVerificationToken
+            await _unitOfWork.AccountTokens.InvalidateActiveTokensAsync(
+                user.Id,
+                AccountTokenPurpose.EmailVerification,
+                cancellationToken);
+            var token = new AccountToken
             {
                 UserId = user.Id,
                 TokenHash = ComputeTokenFingerprint(rawToken),
+                Purpose = AccountTokenPurpose.EmailVerification,
                 ExpiresAtUtc = DateTime.UtcNow.AddMinutes(_emailSettings.VerificationTokenLifetimeMinutes)
             };
 
-            await _unitOfWork.EmailVerificationTokens.AddAsync(token);
+            await _unitOfWork.AccountTokens.AddAsync(token, cancellationToken);
             await _unitOfWork.CompleteAsync();
 
             var verificationUrl = QueryHelpers.AddQueryString(
@@ -201,6 +208,87 @@ namespace GameDBWebApi.Services
                 user.UserName,
                 verificationUrl,
                 cancellationToken);
+        }
+
+        public async Task RequestPasswordResetAsync(
+            ForgotPasswordRequestDto request,
+            CancellationToken cancellationToken)
+        {
+            var user = await _unitOfWork.Users.GetByUserMailAsync(request.Email);
+            if (user == null)
+            {
+                return;
+            }
+
+            var rawToken = WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
+            await _unitOfWork.AccountTokens.InvalidateActiveTokensAsync(
+                user.Id,
+                AccountTokenPurpose.PasswordReset,
+                cancellationToken);
+
+            await _unitOfWork.AccountTokens.AddAsync(
+                new AccountToken
+                {
+                    UserId = user.Id,
+                    TokenHash = ComputeTokenFingerprint(rawToken),
+                    Purpose = AccountTokenPurpose.PasswordReset,
+                    ExpiresAtUtc = DateTime.UtcNow.AddMinutes(
+                        _emailSettings.PasswordResetTokenLifetimeMinutes)
+                },
+                cancellationToken);
+            await _unitOfWork.CompleteAsync();
+
+            var resetUrl = QueryHelpers.AddQueryString(
+                _emailSettings.PasswordResetUrl,
+                "token",
+                rawToken);
+            await _emailService.SendPasswordResetEmailAsync(
+                user.UserEmail,
+                user.UserName,
+                resetUrl,
+                cancellationToken);
+        }
+
+        public async Task ResetPasswordAsync(
+            ResetPasswordRequestDto request,
+            CancellationToken cancellationToken)
+        {
+            var tokenHash = ComputeTokenFingerprint(request.Token);
+            var resetToken = await _unitOfWork.AccountTokens.GetByHashAsync(
+                tokenHash,
+                AccountTokenPurpose.PasswordReset,
+                cancellationToken);
+
+            if (resetToken == null ||
+                resetToken.UsedAtUtc.HasValue ||
+                resetToken.ExpiresAtUtc <= DateTime.UtcNow)
+            {
+                throw new BadRequestException(ErrorMessages.Auth.InvalidOrExpiredPasswordResetToken);
+            }
+
+            resetToken.User.HashPassword = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            resetToken.User.RefreshTokenFingerprint = null;
+            resetToken.User.RefreshTokenExpiryTime = default;
+            resetToken.UsedAtUtc = DateTime.UtcNow;
+            await _unitOfWork.CompleteAsync();
+        }
+
+        public async Task ChangePasswordAsync(
+            int userId,
+            ChangePasswordRequestDto request,
+            CancellationToken cancellationToken)
+        {
+            var user = await _unitOfWork.Users.GetByIdAsync(userId);
+            if (user == null ||
+                !BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.HashPassword))
+            {
+                throw new UnauthorizedException(ErrorMessages.Auth.CurrentPasswordIncorrect);
+            }
+
+            user.HashPassword = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            user.RefreshTokenFingerprint = null;
+            user.RefreshTokenExpiryTime = default;
+            await _unitOfWork.CompleteAsync();
         }
       
         public async Task LogoutAsync(int userId)
