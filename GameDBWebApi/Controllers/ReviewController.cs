@@ -1,8 +1,10 @@
 using GameDBWebApi.DTOs.Review;
 using GameDBWebApi.Entites;
+using GameDBWebApi.Configuration;
 using GameDBWebApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace GameDBWebApi.Controllers
@@ -79,6 +81,7 @@ namespace GameDBWebApi.Controllers
 
         // POST: api/review/game/3498
         [Authorize]
+        [EnableRateLimiting(RateLimitingConfiguration.ReviewCreationPolicy)]
         [HttpPost("game/{catalogId:int}")]
         public async Task<IActionResult> CreateReview(
             [FromRoute] int catalogId,

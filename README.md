@@ -14,6 +14,7 @@ I'm open to **contributions, suggestions, feedback, and collaboration**. Whether
 - Password hashing using BCrypt.
 - Refresh token management with hashed token storage.
 - User account management.
+- Built-in rate limiting for authentication requests by IP address and review creation by authenticated user.
 
 ### 🎮 Game Library Management
 - Integration with IGDB to retrieve video game information through its Apicalypse query API.
@@ -34,6 +35,7 @@ I'm open to **contributions, suggestions, feedback, and collaboration**. Whether
 - Retrieve reviews written by a particular user.
 - Paginated review endpoints.
 - Input validation and ownership checks.
+- Review creation is limited to 10 submissions per authenticated user per hour to reduce spam.
 
 ### 🛠️ Backend Engineering
 - RESTful API architecture using ASP.NET Core.

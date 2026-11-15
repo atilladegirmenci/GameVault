@@ -2,9 +2,11 @@ using GameDBWebApi.DTOs.Auth;
 using GameDBWebApi.Constants;
 using GameDBWebApi.Exceptions;
 using GameDBWebApi.Services;
+using GameDBWebApi.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace GameDBWebApi.Controllers
@@ -23,6 +25,7 @@ namespace GameDBWebApi.Controllers
         }
 
         [AllowAnonymous]
+        [EnableRateLimiting(RateLimitingConfiguration.AuthLoginPolicy)]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
         {
@@ -31,6 +34,7 @@ namespace GameDBWebApi.Controllers
         }
         
         [AllowAnonymous]
+        [EnableRateLimiting(RateLimitingConfiguration.AuthRegisterPolicy)]
         [HttpPost("register")]
         public async Task<IActionResult> Register(
             [FromBody] RegisterRequestDto request,
@@ -41,6 +45,7 @@ namespace GameDBWebApi.Controllers
         }
 
         [AllowAnonymous]
+        [EnableRateLimiting(RateLimitingConfiguration.AuthResendVerificationPolicy)]
         [HttpPost("resend-verification")]
         public async Task<IActionResult> ResendVerification(
             [FromBody] ResendVerificationRequestDto request,
@@ -61,6 +66,7 @@ namespace GameDBWebApi.Controllers
         }
 
         [AllowAnonymous]
+        [EnableRateLimiting(RateLimitingConfiguration.AuthForgotPasswordPolicy)]
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPassword(
             [FromBody] ForgotPasswordRequestDto request,
@@ -71,6 +77,7 @@ namespace GameDBWebApi.Controllers
         }
 
         [AllowAnonymous]
+        [EnableRateLimiting(RateLimitingConfiguration.AuthResetPasswordPolicy)]
         [HttpPost("reset-password")]
         public async Task<IActionResult> ResetPassword(
             [FromBody] ResetPasswordRequestDto request,
@@ -81,6 +88,7 @@ namespace GameDBWebApi.Controllers
         }
 
         [AllowAnonymous]
+        [EnableRateLimiting(RateLimitingConfiguration.AuthRefreshTokenPolicy)]
         [HttpPost("refresh-token")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto request)
         {
