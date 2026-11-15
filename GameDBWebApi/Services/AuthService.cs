@@ -111,7 +111,7 @@ namespace GameDBWebApi.Services
         {
 
             _logger.LogInformation("Attempting to register user: {Username}, {Email}", request.UserName, request.Email);
-           
+
             if (await _unitOfWork.Users.EmailExistsAsync(request.Email))
             {
                 throw new ConflictException(ErrorMessages.Auth.EmailAlreadyExists);
@@ -132,7 +132,7 @@ namespace GameDBWebApi.Services
             };
 
             await _unitOfWork.Users.AddAsync(newUser);
-            await _unitOfWork.CompleteAsync(); 
+            await _unitOfWork.CompleteAsync();
             await SendVerificationEmailAsync(newUser, cancellationToken);
 
             _logger.LogInformation("User {Username} registered successfully.", request.UserName);
@@ -284,13 +284,14 @@ namespace GameDBWebApi.Services
             {
                 throw new UnauthorizedException(ErrorMessages.Auth.CurrentPasswordIncorrect);
             }
+            //TODO: if new password is same as current password, dont update, throw exception
 
             user.HashPassword = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
             user.RefreshTokenFingerprint = null;
             user.RefreshTokenExpiryTime = default;
             await _unitOfWork.CompleteAsync();
         }
-      
+
         public async Task LogoutAsync(int userId)
         {
             // Server-side logout by revoking/clearing the refresh token
@@ -300,10 +301,10 @@ namespace GameDBWebApi.Services
                 user.RefreshTokenFingerprint = null;
                 user.RefreshTokenExpiryTime = default;
                 await _unitOfWork.CompleteAsync();
-                
+
                 _logger.LogInformation("User ID {UserId} logged out successfully. Refresh token cleared.", userId);
             }
-           
+
         }
 
         private string GenerateJwtToken(User user)
