@@ -55,15 +55,22 @@ namespace GameDBWebApi.Controllers
         public async Task<IActionResult> GetGameFeed(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
-            [FromQuery] string ordering = "added",
-            CancellationToken cancellationToken = default) //TODO: Make ordering an enum or a set of predefined values to avoid invalid inputs
+            [FromQuery(Name = "ordering")] GameFeedOrdering ordering = GameFeedOrdering.Newest,
+            [FromQuery] SortDirection direction = SortDirection.Descending,
+            CancellationToken cancellationToken = default)
         {
             int? userId = GetOptionalUserId();
 
             if (pageSize > 40) pageSize = 40;
             if (page < 1) page = 1;
 
-            var feed = await _gameService.GetGameFeedAsync(userId, page, pageSize, ordering, cancellationToken);
+            var feed = await _gameService.GetGameFeedAsync(
+                userId,
+                page,
+                pageSize,
+                ordering,
+                direction,
+                cancellationToken);
 
             return Ok(feed);
         }

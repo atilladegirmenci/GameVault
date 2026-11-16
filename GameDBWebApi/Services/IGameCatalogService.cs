@@ -11,7 +11,8 @@ namespace GameDBWebApi.Services
             int page,
             int pageSize,
             string? keyword,
-            string ordering,
+            GameFeedOrdering ordering,
+            SortDirection direction,
             CancellationToken cancellationToken);
 
 

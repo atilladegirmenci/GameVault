@@ -113,10 +113,22 @@ namespace GameDBWebApi.Services
             int page,
             int pageSize,
             string? keyword,
-            string ordering,
+            GameFeedOrdering ordering,
+            SortDirection direction,
             CancellationToken cancellationToken)
         {
-            var requestUrl = $"https://api.rawg.io/api/games?key={_apiKey}&page={page}&page_size={pageSize}&ordering={ordering}";
+            var orderingField = ordering switch
+            {
+                GameFeedOrdering.Newest => "released",
+                GameFeedOrdering.Popular => "added",
+                GameFeedOrdering.Rating => "rating",
+                GameFeedOrdering.Name => "name",
+                _ => throw new ArgumentOutOfRangeException(nameof(ordering), ordering, "Unsupported game feed ordering.")
+            };
+            var orderingValue = direction == SortDirection.Descending
+                ? $"-{orderingField}"
+                : orderingField;
+            var requestUrl = $"https://api.rawg.io/api/games?key={_apiKey}&page={page}&page_size={pageSize}&ordering={orderingValue}";
 
             if (!string.IsNullOrWhiteSpace(keyword))
             {

@@ -131,7 +131,8 @@ namespace GameDBWebApi.Services
             int? userId,
             int page,
             int pageSize,
-            string ordering,
+            GameFeedOrdering ordering,
+            SortDirection direction,
             CancellationToken cancellationToken)
         {
             var feed = await _catalogApiService.GetGamesByCatalogAsync(
@@ -139,6 +140,7 @@ namespace GameDBWebApi.Services
                 pageSize,
                 null,
                 ordering,
+                direction,
                 cancellationToken);
 
             var dtoList = new PaginatedList<GameCardDto>(feed.Games.Select(g => new GameCardDto
@@ -182,7 +184,8 @@ namespace GameDBWebApi.Services
                 page,
                 pageSize,
                 keyword,
-                "-added",
+                GameFeedOrdering.Newest,
+                SortDirection.Descending,
                 cancellationToken);
 
             if (userId.HasValue && feed.Games.Count > 0)
