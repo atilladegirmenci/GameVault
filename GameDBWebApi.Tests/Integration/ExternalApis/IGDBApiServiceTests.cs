@@ -70,6 +70,6 @@ public class IGDBApiServiceTests
         requestBodies.Should().HaveCount(2);
         requestBodies[0].Should().Contain("where popularity_type = 1;");
         requestBodies[0].Should().Contain("sort value asc;");
-        requestBodies[1].Should().Contain("where id = (42) & category = 0 & version_parent = null;");
+        requestBodies[1].Should().Contain("where id = (42) & game_type = 0 & version_parent = null;");
     }
 }
