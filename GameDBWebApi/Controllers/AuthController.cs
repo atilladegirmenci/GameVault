@@ -27,6 +27,7 @@ namespace GameDBWebApi.Controllers
         [AllowAnonymous]
         [EnableRateLimiting(RateLimitingConfiguration.AuthLoginPolicy)]
         [HttpPost("login")]
+        [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto request)
         {
             var response = await _authService.LoginAsync(request);
@@ -36,6 +37,7 @@ namespace GameDBWebApi.Controllers
         [AllowAnonymous]
         [EnableRateLimiting(RateLimitingConfiguration.AuthRegisterPolicy)]
         [HttpPost("register")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> Register(
             [FromBody] RegisterRequestDto request,
             CancellationToken cancellationToken)
@@ -47,6 +49,7 @@ namespace GameDBWebApi.Controllers
         [AllowAnonymous]
         [EnableRateLimiting(RateLimitingConfiguration.AuthResendVerificationPolicy)]
         [HttpPost("resend-verification")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> ResendVerification(
             [FromBody] ResendVerificationRequestDto request,
             CancellationToken cancellationToken)
@@ -57,6 +60,7 @@ namespace GameDBWebApi.Controllers
 
         [AllowAnonymous]
         [HttpGet("verify-email")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> VerifyEmail(
             [FromQuery] string token,
             CancellationToken cancellationToken)
@@ -68,6 +72,7 @@ namespace GameDBWebApi.Controllers
         [AllowAnonymous]
         [EnableRateLimiting(RateLimitingConfiguration.AuthForgotPasswordPolicy)]
         [HttpPost("forgot-password")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> ForgotPassword(
             [FromBody] ForgotPasswordRequestDto request,
             CancellationToken cancellationToken)
@@ -79,6 +84,7 @@ namespace GameDBWebApi.Controllers
         [AllowAnonymous]
         [EnableRateLimiting(RateLimitingConfiguration.AuthResetPasswordPolicy)]
         [HttpPost("reset-password")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> ResetPassword(
             [FromBody] ResetPasswordRequestDto request,
             CancellationToken cancellationToken)
@@ -90,6 +96,7 @@ namespace GameDBWebApi.Controllers
         [AllowAnonymous]
         [EnableRateLimiting(RateLimitingConfiguration.AuthRefreshTokenPolicy)]
         [HttpPost("refresh-token")]
+        [ProducesResponseType(typeof(LoginResponseDto), StatusCodes.Status200OK)]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto request)
         {
 
@@ -100,6 +107,7 @@ namespace GameDBWebApi.Controllers
 
         [Authorize]
         [HttpPost("logout")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> Logout()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -115,6 +123,7 @@ namespace GameDBWebApi.Controllers
 
         [Authorize]
         [HttpPost("change-password")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> ChangePassword(
             [FromBody] ChangePasswordRequestDto request,
             CancellationToken cancellationToken)

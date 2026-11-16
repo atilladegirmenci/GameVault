@@ -1,4 +1,5 @@
 using GameDBWebApi.DTOs.Review;
+using GameDBWebApi.DTOs;
 using GameDBWebApi.Entites;
 using GameDBWebApi.Configuration;
 using GameDBWebApi.Services;
@@ -23,6 +24,7 @@ namespace GameDBWebApi.Controllers
         // GET: api/review/game/3498?page=1&pageSize=10
         [AllowAnonymous]
         [HttpGet("game/{catalogId:int}")]
+        [ProducesResponseType(typeof(PaginatedList<ReviewResponseDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetGameReviews(
             [FromRoute] int catalogId,
             [FromQuery] int page = 1,
@@ -55,6 +57,7 @@ namespace GameDBWebApi.Controllers
         // GET: api/review/15
         [AllowAnonymous]
         [HttpGet("{reviewId:int}")]
+        [ProducesResponseType(typeof(ReviewResponseDto), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetReviewById(
             [FromRoute] int reviewId)
         {
@@ -105,6 +108,7 @@ namespace GameDBWebApi.Controllers
         // GET: api/review/my-reviews?page=1&pageSize=10
         [Authorize]
         [HttpGet("my-reviews")]
+        [ProducesResponseType(typeof(PaginatedList<ReviewResponseDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetMyReviews(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
