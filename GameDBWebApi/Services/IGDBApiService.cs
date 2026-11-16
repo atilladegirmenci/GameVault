@@ -14,6 +14,8 @@ namespace GameDBWebApi.Services
 {
     public sealed class IGDBApiService : IGameCatalogService
     {
+        private const int PopularityType = 1;
+        private const int MaxPrimitiveBatches = 10;
         private readonly HttpClient _httpClient;
         private readonly ITwitchTokenService _tokenService;
         private readonly ILogger<IGDBApiService> _logger;
@@ -94,10 +96,21 @@ namespace GameDBWebApi.Services
             var where = string.IsNullOrWhiteSpace(keyword)
                 ? string.Empty
                 : $" where name ~ *\"{EscapeQueryValue(keyword)}\"*;";
+
+            if (ordering == GameFeedOrdering.Popular)
+            {
+                return await GetPopularGamesAsync(
+                    page,
+                    pageSize,
+                    keyword,
+                    direction,
+                    offset,
+                    cancellationToken);
+            }
+
             var sortField = ordering switch
             {
                 GameFeedOrdering.Newest => "first_release_date",
-                GameFeedOrdering.Popular => "popularity",
                 GameFeedOrdering.Rating => "aggregated_rating",
                 GameFeedOrdering.Name => "name",
                 _ => throw new ArgumentOutOfRangeException(nameof(ordering), ordering, "Unsupported game feed ordering.")
@@ -125,14 +138,149 @@ namespace GameDBWebApi.Services
                 }).ToList()
             };
         }
+        private async Task<PaginatedFeedResponse> GetPopularGamesAsync(
+            int page,
+            int pageSize,
+            string? keyword,
+            SortDirection direction,
+            int offset,
+            CancellationToken cancellationToken)
+        {
+
+            var sortDirection = direction switch
+            {
+                SortDirection.Ascending => "asc",
+                SortDirection.Descending => "desc",
+                _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, "Unsupported sort direction.")
+            };
+            var gameIdsFilter = string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                var matchingGames = await QueryGamesAsync(
+                    $"search \"{EscapeQueryValue(keyword)}\"; fields id; limit 500;",
+                    cancellationToken);
+                var matchingIds = matchingGames.Select(game => game.Id).ToList();
+
+                if (matchingIds.Count == 0)
+                {
+                    return new PaginatedFeedResponse
+                    {
+                        TotalCount = 0,
+                        CurrentPage = page,
+                        PageSize = pageSize
+                    };
+                }
+
+                gameIdsFilter = $" & game_id = ({string.Join(",", matchingIds)})";
+            }
+
+            // Popülerlik sırasını korumak için hem liste hem sözlük kullanıyoruz.
+            var orderedEligibleIds = new List<int>();
+            var eligibleGamesById = new Dictionary<int, IGDBGameResponse>();
+            var seenGameIds = new HashSet<int>();
+
+            var primitiveOffset = 0;
+            const int primitiveBatchSize = 100;
+            var requiredGameCount = offset + pageSize;
+            var batchCount = 0;
+
+            while (orderedEligibleIds.Count < requiredGameCount && batchCount < MaxPrimitiveBatches)
+            {
+                batchCount++;
+
+                var popularityPrimitives = await QueryPopularityPrimitivesAsync(
+                    $"fields game_id,value; where popularity_type = {PopularityType}{gameIdsFilter}; " +
+                    $"sort value {sortDirection}; limit {primitiveBatchSize}; offset {primitiveOffset};",
+                    cancellationToken);
+
+                var primitiveGameIds = popularityPrimitives
+                    .Where(primitive => primitive.GameId.HasValue)
+                    .Select(primitive => primitive.GameId!.Value)
+                    .Where(id => seenGameIds.Add(id)) // önceki batch'lerde görülenleri ele
+                    .ToList();
+
+                if (popularityPrimitives.Count == 0)
+                {
+                    break;
+                }
+
+                if (primitiveGameIds.Count > 0)
+                {
+                    var games = await QueryGamesAsync(
+                        $"fields id,name,cover.image_id,aggregated_rating; " +
+                        $"where id = ({string.Join(",", primitiveGameIds)}) & game_type = 0 & version_parent = null; " +
+                        $"limit {primitiveGameIds.Count};",
+                        cancellationToken);
+
+                    var gamesById = games.ToDictionary(game => game.Id);
+
+                    // Popülerlik sırasını koruyarak ekle
+                    foreach (var gameId in primitiveGameIds)
+                    {
+                        if (gamesById.TryGetValue(gameId, out var game))
+                        {
+                            orderedEligibleIds.Add(gameId);
+                            eligibleGamesById[gameId] = game;
+                        }
+                    }
+                }
+
+                primitiveOffset += popularityPrimitives.Count;
+
+                if (popularityPrimitives.Count < primitiveBatchSize)
+                {
+                    break;
+                }
+            }
+
+            var gameCards = orderedEligibleIds
+                .Skip(offset)
+                .Take(pageSize)
+                .Select(gameId => eligibleGamesById[gameId])
+                .Select(game => new GameCardDto
+                {
+                    CatalogId = game.Id,
+                    Title = game.Name ?? string.Empty,
+                    ImageUrl = GetImageUrl(game.Cover?.ImageId),
+                    Score = ToScore(game.AggregatedRating)
+                })
+                .ToList();
+
+            return new PaginatedFeedResponse
+            {
+                TotalCount = offset + gameCards.Count,
+                CurrentPage = page,
+                PageSize = pageSize,
+                Games = gameCards
+            };
+        }
 
         private async Task<List<IGDBGameResponse>> QueryGamesAsync(
             string query,
             CancellationToken cancellationToken)
         {
+            return await QueryEndpointAsync<IGDBGameResponse>("games", query, cancellationToken);
+        }
+
+        private async Task<List<IGDBPopularityPrimitive>> QueryPopularityPrimitivesAsync(
+                string query,
+                CancellationToken cancellationToken)
+        {
+            return await QueryEndpointAsync<IGDBPopularityPrimitive>(
+                "popularity_primitives",
+                query,
+                cancellationToken);
+        }
+
+        private async Task<List<T>> QueryEndpointAsync<T>(
+                string endpoint,
+                string query,
+                CancellationToken cancellationToken)
+        {
             try
             {
-                using var request = new HttpRequestMessage(HttpMethod.Post, "games");
+                using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
                 request.Headers.Authorization = new AuthenticationHeaderValue(
                     "Bearer",
                     await _tokenService.GetAccessTokenAsync(cancellationToken));
@@ -142,7 +290,7 @@ namespace GameDBWebApi.Services
                 using var response = await _httpClient.SendAsync(request, cancellationToken);
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {
-                    _logger.LogWarning("IGDB returned 404 for the games query.");
+                    _logger.LogWarning("IGDB returned 404 for the {Endpoint} query.", endpoint);
                     return [];
                 }
 
@@ -152,15 +300,15 @@ namespace GameDBWebApi.Services
                     throw new ExternalServiceException(ErrorMessages.External.IgdbRequestFailed);
                 }
 
-                var games = await response.Content.ReadFromJsonAsync<List<IGDBGameResponse>>(cancellationToken);
-                if (games is null)
+                var results = await response.Content.ReadFromJsonAsync<List<T>>(cancellationToken);
+                if (results is null)
                 {
                     _logger.LogError("IGDB returned an empty response body.");
                     throw new ExternalServiceException(ErrorMessages.External.IgdbResponseInvalid);
                 }
 
-                _logger.LogDebug("IGDB returned {GameCount} games.", games.Count);
-                return games;
+                _logger.LogDebug("IGDB {Endpoint} query returned {ResultCount} results.", endpoint, results.Count);
+                return results;
             }
             catch (BrokenCircuitException ex)
             {
@@ -219,6 +367,12 @@ namespace GameDBWebApi.Services
             [JsonPropertyName("aggregated_rating")] public double? AggregatedRating { get; set; }
             [JsonPropertyName("genres")] public List<IGDBNamedItem>? Genres { get; set; }
             [JsonPropertyName("involved_companies")] public List<IGDBInvolvedCompany>? InvolvedCompanies { get; set; }
+        }
+
+        private sealed class IGDBPopularityPrimitive
+        {
+            [JsonPropertyName("game_id")] public int? GameId { get; set; }
+            [JsonPropertyName("value")] public decimal Value { get; set; }
         }
 
         private sealed class IGDBCover
