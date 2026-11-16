@@ -129,7 +129,7 @@ namespace GameDBWebApi.Controllers
             return userId;
         }
 
-       
+
         private int? GetOptionalUserId()
         {
             if (User?.Identity?.IsAuthenticated == true)
