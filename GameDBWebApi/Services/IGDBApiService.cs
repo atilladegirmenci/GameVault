@@ -81,7 +81,8 @@ namespace GameDBWebApi.Services
             int page,
             int pageSize,
             string? keyword,
-            string ordering,
+            GameFeedOrdering ordering,
+            SortDirection direction,
             CancellationToken cancellationToken)
         {
             _logger.LogInformation(
@@ -93,8 +94,21 @@ namespace GameDBWebApi.Services
             var where = string.IsNullOrWhiteSpace(keyword)
                 ? string.Empty
                 : $" where name ~ *\"{EscapeQueryValue(keyword)}\"*;";
-            var sort = ordering.StartsWith("-", StringComparison.Ordinal) ? "desc" : "asc";
-            var query = $"fields id,name,cover.image_id,aggregated_rating;{where} sort first_release_date {sort}; limit {pageSize}; offset {offset};";
+            var sortField = ordering switch
+            {
+                GameFeedOrdering.Newest => "first_release_date",
+                GameFeedOrdering.Popular => "popularity",
+                GameFeedOrdering.Rating => "aggregated_rating",
+                GameFeedOrdering.Name => "name",
+                _ => throw new ArgumentOutOfRangeException(nameof(ordering), ordering, "Unsupported game feed ordering.")
+            };
+            var sortDirection = direction switch
+            {
+                SortDirection.Ascending => "asc",
+                SortDirection.Descending => "desc",
+                _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, "Unsupported sort direction.")
+            };
+            var query = $"fields id,name,cover.image_id,aggregated_rating;{where} sort {sortField} {sortDirection}; limit {pageSize}; offset {offset};";
             var games = await QueryGamesAsync(query, cancellationToken);
 
             return new PaginatedFeedResponse
