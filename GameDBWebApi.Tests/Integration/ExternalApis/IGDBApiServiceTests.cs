@@ -38,11 +38,16 @@ public class IGDBApiServiceTests
     [Trait("Category", "Integration")]
     public async Task BuildsIgdbSortQueryFromOrderingAndDirection()
     {
-        string? requestBody = null;
+        var requestBodies = new List<string>();
         var handler = new StubHttpMessageHandler(async (request, cancellationToken) =>
         {
-            requestBody = await request.Content!.ReadAsStringAsync(cancellationToken);
-            return ExternalApiTestSupport.JsonResponse("[]");
+            requestBodies.Add(await request.Content!.ReadAsStringAsync(cancellationToken));
+            return handlerResponse(requestBodies.Count);
+
+            static HttpResponseMessage handlerResponse(int requestNumber) =>
+                requestNumber == 1
+                    ? ExternalApiTestSupport.JsonResponse("""[{"game_id":42,"value":1.2}]""")
+                    : ExternalApiTestSupport.JsonResponse("""[{"id":42,"name":"Example","aggregated_rating":88.4}]""");
         });
         var token = new Mock<ITwitchTokenService>();
         token.Setup(x => x.GetAccessTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync("token");
@@ -62,6 +67,9 @@ public class IGDBApiServiceTests
             SortDirection.Ascending,
             CancellationToken.None);
 
-        requestBody.Should().Contain("sort popularity asc;");
+        requestBodies.Should().HaveCount(2);
+        requestBodies[0].Should().Contain("where popularity_type = 1;");
+        requestBodies[0].Should().Contain("sort value asc;");
+        requestBodies[1].Should().Contain("where id = (42) & category = 0 & version_parent = null;");
     }
 }
