@@ -84,7 +84,13 @@ public class GameServiceTests
                 new GameCardDto { CatalogId = 42, Title = "Zelda", ImageUrl = "image" }
             ]
         };
-        catalog.Setup(x => x.GetGamesByCatalogAsync(1, 10, "zelda", "-added", It.IsAny<CancellationToken>()))
+        catalog.Setup(x => x.GetGamesByCatalogAsync(
+                1,
+                10,
+                "zelda",
+                GameFeedOrdering.Newest,
+                SortDirection.Descending,
+                It.IsAny<CancellationToken>()))
             .ReturnsAsync(expected);
         userGames.Setup(x => x.GetStatusesByCatalogIdsAsync(
                 5,

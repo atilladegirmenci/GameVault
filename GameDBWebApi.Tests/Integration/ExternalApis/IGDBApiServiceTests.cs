@@ -1,4 +1,5 @@
 using FluentAssertions;
+using GameDBWebApi.DTOs.Game;
 using GameDBWebApi.Services;
 using Microsoft.Extensions.Configuration;
 using Moq;
@@ -31,5 +32,36 @@ public class IGDBApiServiceTests
         result.ImageUrl.Should().Contain("cover");
         handler.LastRequest!.Headers.Authorization!.Parameter.Should().Be("token");
         handler.LastRequest.Headers.GetValues("Client-ID").Single().Should().Be("client");
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
+    public async Task BuildsIgdbSortQueryFromOrderingAndDirection()
+    {
+        string? requestBody = null;
+        var handler = new StubHttpMessageHandler(async (request, cancellationToken) =>
+        {
+            requestBody = await request.Content!.ReadAsStringAsync(cancellationToken);
+            return ExternalApiTestSupport.JsonResponse("[]");
+        });
+        var token = new Mock<ITwitchTokenService>();
+        token.Setup(x => x.GetAccessTokenAsync(It.IsAny<CancellationToken>())).ReturnsAsync("token");
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["IGDB:ClientId"] = "client" }).Build();
+        var service = new IGDBApiService(
+            new HttpClient(handler) { BaseAddress = new Uri("https://api.igdb.io/v4/") },
+            token.Object,
+            configuration,
+            TestDoubles.Logger<IGDBApiService>());
+
+        await service.GetGamesByCatalogAsync(
+            1,
+            10,
+            null,
+            GameFeedOrdering.Popular,
+            SortDirection.Ascending,
+            CancellationToken.None);
+
+        requestBody.Should().Contain("sort popularity asc;");
     }
 }
