@@ -19,6 +19,7 @@ namespace GameDBWebApi.Controllers
 
         [Authorize]
         [HttpGet("profile")]
+        [ProducesResponseType(typeof(UserProfileDto), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetProfile()
         {
             var currentUserId = GetCurrentUserId();
@@ -29,6 +30,7 @@ namespace GameDBWebApi.Controllers
 
         [Authorize]
         [HttpPut("profile")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateRequestDto request)
         {
             var currentUserId = GetCurrentUserId();
@@ -39,6 +41,7 @@ namespace GameDBWebApi.Controllers
 
         [Authorize]
         [HttpDelete("profile")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> DeleteAccount()
         {
             var currentUserId = GetCurrentUserId();

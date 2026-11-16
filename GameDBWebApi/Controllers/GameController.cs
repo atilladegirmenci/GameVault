@@ -1,4 +1,5 @@
 using GameDBWebApi.DTOs.Game;
+using GameDBWebApi.DTOs;
 using GameDBWebApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +20,7 @@ namespace GameDBWebApi.Controllers
 
         [Authorize]
         [HttpPost("status")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateGameStatus(
             [FromBody] UpsertGameStatusDto request,
             CancellationToken cancellationToken)
@@ -32,6 +34,7 @@ namespace GameDBWebApi.Controllers
 
         [Authorize]
         [HttpGet("my-games")]
+        [ProducesResponseType(typeof(PaginatedList<GameCardDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetUserGames(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
@@ -48,6 +51,7 @@ namespace GameDBWebApi.Controllers
 
         [AllowAnonymous]
         [HttpGet("feed")]
+        [ProducesResponseType(typeof(PaginatedList<GameCardDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetGameFeed(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
@@ -66,6 +70,7 @@ namespace GameDBWebApi.Controllers
 
         [AllowAnonymous]
         [HttpGet("search")]
+        [ProducesResponseType(typeof(PaginatedFeedResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> SearchGameByTitle(
             [FromQuery] string keyword,
             [FromQuery] int page = 1,
@@ -93,6 +98,7 @@ namespace GameDBWebApi.Controllers
 
         [AllowAnonymous]
         [HttpGet("{catalogId}")]
+        [ProducesResponseType(typeof(GameDetailsResponseDto), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetGameDetails(
             [FromRoute] int catalogId,
             CancellationToken cancellationToken)

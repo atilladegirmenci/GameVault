@@ -20,6 +20,7 @@ namespace GameDBWebApi.Controllers
 
         [HttpGet("user/{userId:int}")]
         [AllowAnonymous]
+        [ProducesResponseType(typeof(IEnumerable<UserListResponseDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetUserLists(int userId)
         {
             var result = await _userListService.GetUserListsAsync(userId);
@@ -28,6 +29,7 @@ namespace GameDBWebApi.Controllers
 
         [HttpGet("{listId:int}/games")]
         [AllowAnonymous]
+        [ProducesResponseType(typeof(IEnumerable<UserListGameResponseDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetListGames(int listId)
         {
             var result = await _userListService.GetListGamesAsync(listId);
@@ -48,6 +50,7 @@ namespace GameDBWebApi.Controllers
 
         [HttpPut("{listId:int}")]
         [Authorize]
+        [ProducesResponseType(typeof(UserListResponseDto), StatusCodes.Status200OK)]
         public async Task<IActionResult> UpdateList(int listId, [FromBody] UpdateUserListRequestDto request)
         {
             if (!TryGetUserId(out var userId))

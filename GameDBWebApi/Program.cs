@@ -60,6 +60,15 @@ builder.Services
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddFluentValidationClientsideAdapters();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("https://localhost:5173")
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 builder.Services.AddGameVaultRateLimiting();
 
@@ -185,6 +194,7 @@ app.UseSerilogRequestLogging();
 app.UseHttpsRedirection();
 
 app.UseRouting();
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseRateLimiter();
 app.UseAuthorization();
