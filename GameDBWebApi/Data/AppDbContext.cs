@@ -205,12 +205,12 @@ namespace GameDBWebApi.Data
                 {
                     table.HasCheckConstraint(
                         "CK_Reviews_Rating",
-                        "[Rating] >= 1 AND [Rating] <= 5");
+                        "[Rating] >= 1 AND [Rating] <= 10");
                 });
 
                 entity.HasKey(r => r.Id);
 
-                // Rating must be between 1 and 5
+                // Rating must be between 1 and 10
                 entity.Property(r => r.Rating)
                       .IsRequired();
 

@@ -22,7 +22,7 @@ namespace GameDBWebApi.Entites
         public int UserId { get; set; }
 
         /// <summary>
-        /// Numeric rating given by the user (e.g. 1-10 or 1-5 depending on UI contract).
+        /// Numeric rating given by the user on a 1-10 scale.
         /// </summary>
         public short Rating { get; set; }
 
