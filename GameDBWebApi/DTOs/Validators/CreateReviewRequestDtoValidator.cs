@@ -8,8 +8,8 @@ namespace GameDBWebApi.DTOs.Validators
         public CreateReviewRequestDtoValidator()
         {
             RuleFor(x => x.Rating)
-                .Must(r => r >= 1 && r <= 5)
-                .WithMessage("Rating must be between 1 and 5.");
+                .Must(r => r >= 1 && r <= 10)
+                .WithMessage("Rating must be between 1 and 10.");
 
             RuleFor(x => x.Comment)
                 .NotEmpty()
