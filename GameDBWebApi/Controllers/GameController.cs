@@ -33,6 +33,25 @@ namespace GameDBWebApi.Controllers
         }
 
         [Authorize]
+        [HttpDelete("status/{catalogId:int}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> RemoveGameFromLibrary(
+            [FromRoute] int catalogId,
+            CancellationToken cancellationToken)
+        {
+            if (catalogId <= 0)
+            {
+                return BadRequest(new { message = "Catalog ID must be greater than 0." });
+            }
+
+            var currentUserId = GetCurrentUserId();
+            await _gameService.RemoveGameFromLibraryAsync(currentUserId, catalogId, cancellationToken);
+
+            return NoContent();
+        }
+
+        [Authorize]
         [HttpGet("my-games")]
         [ProducesResponseType(typeof(PaginatedList<GameCardDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetUserGames(

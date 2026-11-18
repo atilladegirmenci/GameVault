@@ -31,6 +31,12 @@ namespace GameDBWebApi.Repositories
             _context.UserGames.Update(userGame);
         }
 
+        public Task DeleteAsync(UserGame userGame)
+        {
+            _context.UserGames.Remove(userGame);
+            return Task.CompletedTask;
+        }
+
         public async Task<PaginatedList<UserGame>> GetByUserIdAsync(int userId, int page, int pageSize)
         {
             // iqueryable

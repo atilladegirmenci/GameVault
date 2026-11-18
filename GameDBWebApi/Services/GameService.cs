@@ -71,6 +71,34 @@ namespace GameDBWebApi.Services
             await _unitOfWork.CompleteAsync();
         }
 
+        public async Task RemoveGameFromLibraryAsync(
+            int userId,
+            int catalogId,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var game = await _unitOfWork.Games.GetByCatalogIdAsync(catalogId);
+            if (game == null)
+            {
+                return;
+            }
+
+            var userGame = await _unitOfWork.UserGames.GetByUserIDAndGameIdAsync(userId, game.Id);
+            if (userGame == null)
+            {
+                return;
+            }
+
+            await _unitOfWork.UserGames.DeleteAsync(userGame);
+            await _unitOfWork.CompleteAsync();
+
+            _logger.LogInformation(
+                "Removed game {CatalogId} from user {UserId}'s library.",
+                catalogId,
+                userId);
+        }
+
         public async Task<GameDetailsResponseDto> GetGameDetailsAsync(
             int? userId,
             int catalogId,

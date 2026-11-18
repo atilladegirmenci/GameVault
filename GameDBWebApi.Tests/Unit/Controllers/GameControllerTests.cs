@@ -34,6 +34,33 @@ public class GameControllerTests
         game.Verify(x => x.GetUserGamesAsync(4, 1, 40, It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Fact]
+    public async Task RemoveGameFromLibraryUsesAuthenticatedUserAndReturnsNoContent()
+    {
+        var game = new Mock<IGameService>();
+        var controller = new GameController(game.Object) { ControllerContext = Context(4) };
+
+        var result = await controller.RemoveGameFromLibrary(42, CancellationToken.None);
+
+        result.Should().BeOfType<NoContentResult>();
+        game.Verify(x => x.RemoveGameFromLibraryAsync(4, 42, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task RemoveGameFromLibraryRejectsInvalidCatalogId()
+    {
+        var game = new Mock<IGameService>();
+        var controller = new GameController(game.Object);
+
+        var result = await controller.RemoveGameFromLibrary(0, CancellationToken.None);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
+        game.Verify(x => x.RemoveGameFromLibraryAsync(
+            It.IsAny<int>(),
+            It.IsAny<int>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     private static ControllerContext Context(int id) =>
         new() { HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(
             new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, id.ToString())], "test")) } };

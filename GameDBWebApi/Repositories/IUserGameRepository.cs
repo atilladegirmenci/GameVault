@@ -8,6 +8,7 @@ namespace GameDBWebApi.Repositories
         Task<UserGame?> GetByUserIDAndGameIdAsync(int userId, int gameId);
         Task AddAsync(UserGame userGame);
         Task UpdateAsync(UserGame userGame);
+        Task DeleteAsync(UserGame userGame);
         Task<PaginatedList<UserGame>> GetByUserIdAsync(int userId, int page, int pageSize);
         Task<List<UserGame>> GetStatusesByCatalogIdsAsync(int userId, List<int> catalogIds);
     }
