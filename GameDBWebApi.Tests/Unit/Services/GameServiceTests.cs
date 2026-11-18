@@ -67,7 +67,7 @@ public class GameServiceTests
 
         var result = await service.GetUserGamesAsync(5, 1, 10, CancellationToken.None);
 
-        result.Should().BeEmpty();
+        result.Items.Should().BeEmpty();
         result.TotalCount.Should().Be(0);
     }
 
@@ -79,6 +79,8 @@ public class GameServiceTests
         var expected = new PaginatedFeedResponse
         {
             CurrentPage = 1,
+            PageSize = 10,
+            TotalCount = 1,
             Games =
             [
                 new GameCardDto { CatalogId = 42, Title = "Zelda", ImageUrl = "image" }
@@ -112,9 +114,9 @@ public class GameServiceTests
 
         var result = await service.SearchGamesAsync(5, 1, 10, "zelda", CancellationToken.None);
 
-        result.Should().BeSameAs(expected);
-        result.Games[0].GameId.Should().Be(7);
-        result.Games[0].Status.Should().Be(GameStatus.Playing);
-        result.Games[0].UpdatedDate.Should().Be(new DateTime(2026, 11, 12));
+        result.Items.Should().ContainSingle();
+        result.Items[0].GameId.Should().Be(7);
+        result.Items[0].Status.Should().Be(GameStatus.Playing);
+        result.Items[0].UpdatedDate.Should().Be(new DateTime(2026, 11, 12));
     }
 }

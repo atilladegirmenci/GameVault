@@ -1,12 +1,13 @@
 namespace GameDBWebApi.DTOs
 {
-    // Generic class to represent a paginated list of items
-    public class PaginatedList<T>: List<T>
+    // Generic object response for paginated API endpoints.
+    public class PaginatedList<T>
     {
-        public int CurrentPage { get; private set; }
-        public int TotalPages { get; private set; }
-        public int PageSize { get; private set; }
-        public int TotalCount { get; private set; }
+        public List<T> Items { get; }
+        public int CurrentPage { get; }
+        public int TotalPages { get; }
+        public int PageSize { get; }
+        public int TotalCount { get; }
 
         //for frontend, useful to know if there is a previous or next page
         public bool HasPrevious => CurrentPage > 1;
@@ -18,10 +19,11 @@ namespace GameDBWebApi.DTOs
             PageSize = pageSize;
             CurrentPage = pageNumber;
 
-            TotalPages = (int)Math.Ceiling(count / (double)pageSize);
+            TotalPages = pageSize > 0
+                ? (int)Math.Ceiling(count / (double)pageSize)
+                : 0;
 
-            // add the incoming items to the list
-            this.AddRange(items);
+            Items = items;
         }
     }
 }

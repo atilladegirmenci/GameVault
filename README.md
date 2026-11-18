@@ -8,6 +8,27 @@ I'm open to **contributions, suggestions, feedback, and collaboration**. Whether
 
 ## ✨ Features
 
+### Paginated API responses
+
+Paginated game and review endpoints return an object with an `items` array and shared
+metadata (`currentPage`, `pageSize`, `totalCount`, `totalPages`, `hasPrevious`, and
+`hasNext`). This applies to game feed, game search, the authenticated user's games,
+game reviews, and the authenticated user's reviews. For example:
+
+```json
+{
+  "items": [],
+  "currentPage": 1,
+  "pageSize": 10,
+  "totalCount": 0,
+  "totalPages": 0,
+  "hasPrevious": false,
+  "hasNext": false
+}
+```
+
+Clients should read result entries from `items` and use the metadata for pagination.
+
 ### 🔐 Authentication and User Management
 - User registration and login with JWT-based authentication.
 - Email verification with time-limited, single-use verification links.
