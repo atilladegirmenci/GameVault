@@ -33,7 +33,7 @@ namespace GameDBWebApi.Services
             const int pageSize = 20;
             var userGamesPaginated = await _unitOfWork.UserGames.GetByUserIdAsync(id, page, pageSize);
 
-            var gameDtos = userGamesPaginated.Select(ug => new DTOs.Game.GameCardDto
+            var gameDtos = userGamesPaginated.Items.Select(ug => new DTOs.Game.GameCardDto
             {
                 CatalogId = ug.Game.CatalogId,
                 Title = ug.Game.Title,
