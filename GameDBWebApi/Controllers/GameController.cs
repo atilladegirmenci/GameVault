@@ -42,6 +42,7 @@ namespace GameDBWebApi.Controllers
         {
             var currentUserId = GetCurrentUserId();
 
+            if (pageSize < 1) pageSize = 10;
             if (pageSize > 40) pageSize = 40;
             if (page < 1) page = 1;
 
@@ -61,6 +62,7 @@ namespace GameDBWebApi.Controllers
         {
             int? userId = GetOptionalUserId();
 
+            if (pageSize < 1) pageSize = 10;
             if (pageSize > 40) pageSize = 40;
             if (page < 1) page = 1;
 
@@ -77,7 +79,7 @@ namespace GameDBWebApi.Controllers
 
         [AllowAnonymous]
         [HttpGet("search")]
-        [ProducesResponseType(typeof(PaginatedFeedResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedList<GameCardDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> SearchGameByTitle(
             [FromQuery] string keyword,
             [FromQuery] int page = 1,
@@ -89,6 +91,7 @@ namespace GameDBWebApi.Controllers
                 return BadRequest(new { message = "Keyword cannot be null or empty" });
             }
 
+            if (pageSize < 1) pageSize = 10;
             if (pageSize > 40) pageSize = 40;
             if (page < 1) page = 1;
 

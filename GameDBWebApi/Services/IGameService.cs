@@ -15,7 +15,7 @@ public interface IGameService
         GameFeedOrdering ordering,
         SortDirection direction,
         CancellationToken cancellationToken);
-    Task<PaginatedFeedResponse> SearchGamesAsync(
+    Task<PaginatedList<GameCardDto>> SearchGamesAsync(
         int? userId,
         int page,
         int pageSize,

@@ -107,13 +107,17 @@ namespace GameDBWebApi.Services
         {
             var userGames = await _unitOfWork.UserGames.GetByUserIdAsync(userId, page, pageSize);
 
-            if (userGames == null || !userGames.Any())
+            if (userGames == null || userGames.Items.Count == 0)
             {
                 _logger.LogInformation("No games found for user {userId}.", userId);
-                return new PaginatedList<GameCardDto>(new List<GameCardDto>(), 0, page, pageSize);
+                return new PaginatedList<GameCardDto>(
+                    new List<GameCardDto>(),
+                    userGames?.TotalCount ?? 0,
+                    page,
+                    pageSize);
             }
 
-            var gameCardDtos = userGames.Select(ug => new GameCardDto
+            var gameCardDtos = userGames.Items.Select(ug => new GameCardDto
             {
                 CatalogId = ug.Game.CatalogId,
                 Title = ug.Game.Title,
@@ -143,24 +147,24 @@ namespace GameDBWebApi.Services
                 direction,
                 cancellationToken);
 
-            var dtoList = new PaginatedList<GameCardDto>(feed.Games.Select(g => new GameCardDto
+            var items = feed.Games.Select(g => new GameCardDto
             {
                 CatalogId = g.CatalogId,
                 Title = g.Title,
                 ImageUrl = g.ImageUrl,
                 Score = g.Score
-            }).ToList(), feed.TotalCount, page, pageSize);
+            }).ToList();
 
-            if (userId.HasValue && dtoList.Any())
+            if (userId.HasValue && items.Count > 0)
             {
-                var catalogIds = dtoList.Select(x => x.CatalogId).ToList();
+                var catalogIds = items.Select(x => x.CatalogId).ToList();
 
                 var userGameStatuses = await _unitOfWork.UserGames.GetStatusesByCatalogIdsAsync(userId.Value, catalogIds);
 
                 //using dictionary o(1) lookup 
                 var statusDict = userGameStatuses.ToDictionary(s => s.Game.CatalogId, s => s);
 
-                foreach (var item in dtoList)
+                foreach (var item in items)
                 {
                     if (statusDict.TryGetValue(item.CatalogId, out var status))
                     {
@@ -171,9 +175,9 @@ namespace GameDBWebApi.Services
                 }
             }
 
-            return new PaginatedList<GameCardDto>(dtoList, feed.TotalCount, page, pageSize);
+            return new PaginatedList<GameCardDto>(items, feed.TotalCount, page, pageSize);
         }
-        public async Task<PaginatedFeedResponse> SearchGamesAsync(
+        public async Task<PaginatedList<GameCardDto>> SearchGamesAsync(
             int? userId,
             int page,
             int pageSize,
@@ -209,7 +213,11 @@ namespace GameDBWebApi.Services
                 }
             }
 
-            return feed;
+            return new PaginatedList<GameCardDto>(
+                feed.Games,
+                feed.TotalCount,
+                page,
+                pageSize);
         }
 
 
