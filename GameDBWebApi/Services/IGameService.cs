@@ -8,6 +8,7 @@ public interface IGameService
 {
     Task UpsertGameStatusAsync(int userİd, UpsertGameStatusDto request, CancellationToken cancellationToken);
     Task<GameDetailsResponseDto> GetGameDetailsAsync(int? userId, int catalogId, CancellationToken cancellationToken);
+    Task RemoveGameFromLibraryAsync(int userId, int catalogId, CancellationToken cancellationToken);
     Task<PaginatedList<GameCardDto>> GetGameFeedAsync(
         int? userId,
         int page,

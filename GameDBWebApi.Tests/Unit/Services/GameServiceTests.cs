@@ -32,6 +32,48 @@ public class GameServiceTests
     }
 
     [Fact]
+    public async Task RemoveGameFromLibraryAsync_DeletesOnlyTheUsersGameRelationship()
+    {
+        var games = new Mock<IGameRepository>();
+        var userGames = new Mock<IUserGameRepository>();
+        var unitOfWork = TestDoubles.UnitOfWork(games: games, userGames: userGames);
+        var game = new Game { Id = 7, CatalogId = 42, Title = "Game", ImageUrl = "image" };
+        var userGame = new UserGame { UserId = 5, GameId = 7, Game = game, Status = GameStatus.Finished };
+        games.Setup(x => x.GetByCatalogIdAsync(42)).ReturnsAsync(game);
+        userGames.Setup(x => x.GetByUserIDAndGameIdAsync(5, 7)).ReturnsAsync(userGame);
+        var service = new GameService(
+            unitOfWork.Object,
+            Mock.Of<IGameCatalogService>(),
+            TestDoubles.Logger<GameService>());
+
+        await service.RemoveGameFromLibraryAsync(5, 42, CancellationToken.None);
+
+        userGames.Verify(x => x.DeleteAsync(userGame), Times.Once);
+        unitOfWork.Verify(x => x.CompleteAsync(), Times.Once);
+        games.Verify(x => x.GetByCatalogIdAsync(42), Times.Once);
+    }
+
+    [Fact]
+    public async Task RemoveGameFromLibraryAsync_WhenRelationshipDoesNotExist_DoesNotSave()
+    {
+        var games = new Mock<IGameRepository>();
+        var userGames = new Mock<IUserGameRepository>();
+        var unitOfWork = TestDoubles.UnitOfWork(games: games, userGames: userGames);
+        games.Setup(x => x.GetByCatalogIdAsync(42))
+            .ReturnsAsync(new Game { Id = 7, CatalogId = 42, Title = "Game", ImageUrl = "image" });
+        userGames.Setup(x => x.GetByUserIDAndGameIdAsync(5, 7)).ReturnsAsync((UserGame?)null);
+        var service = new GameService(
+            unitOfWork.Object,
+            Mock.Of<IGameCatalogService>(),
+            TestDoubles.Logger<GameService>());
+
+        await service.RemoveGameFromLibraryAsync(5, 42, CancellationToken.None);
+
+        userGames.Verify(x => x.DeleteAsync(It.IsAny<UserGame>()), Times.Never);
+        unitOfWork.Verify(x => x.CompleteAsync(), Times.Never);
+    }
+
+    [Fact]
     public async Task GetGameDetailsAsync_AuthenticatedUserAddsLibraryStatus()
     {
         var games = new Mock<IGameRepository>();
