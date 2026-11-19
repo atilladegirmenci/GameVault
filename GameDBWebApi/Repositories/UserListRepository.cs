@@ -1,5 +1,6 @@
 
 using GameDBWebApi.Data;
+using GameDBWebApi.DTOs.List;
 using GameDBWebApi.Entites;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,12 +27,28 @@ namespace GameDBWebApi.Repositories
                 .AnyAsync(ul => ul.Id == listId);
         }
 
-        // ListedGames is included so the service can calculate GameCount.
-        public async Task<IEnumerable<UserList>> GetByUserIdAsync(int userId)
+        public async Task<IEnumerable<UserListResponseDto>> GetSummariesByUserIdAsync(
+            int userId,
+            int previewCount)
         {
             return await _context.UserLists
+                .AsNoTracking()
                 .Where(ul => ul.UserId == userId)
-                .Include(ul => ul.ListedGames)
+                .OrderBy(ul => ul.Id)
+                .Select(ul => new UserListResponseDto
+                {
+                    Id = ul.Id,
+                    ListTitle = ul.ListTitle,
+                    UserId = ul.UserId,
+                    GameCount = ul.ListedGames.Count,
+                    PreviewImageUrls = ul.ListedGames
+                        .Where(ulg => ulg.Game.ImageUrl != null)
+                        .OrderByDescending(ulg => ulg.AddedDate)
+                        .ThenBy(ulg => ulg.GameId)
+                        .Select(ulg => ulg.Game.ImageUrl!)
+                        .Take(previewCount)
+                        .ToList()
+                })
                 .ToListAsync();
         }
 
@@ -83,6 +100,8 @@ namespace GameDBWebApi.Repositories
         {
             return await _context.UserListGames
                 .Where(ulg => ulg.UserListId == listId)
+                .OrderByDescending(ulg => ulg.AddedDate)
+                .ThenBy(ulg => ulg.GameId)
                 .Include(ulg => ulg.Game)
                 .ToListAsync();
         }

@@ -1,4 +1,5 @@
 using GameDBWebApi.Entites;
+using GameDBWebApi.DTOs.List;
 
 namespace GameDBWebApi.Repositories
 {
@@ -7,7 +8,7 @@ namespace GameDBWebApi.Repositories
         //UserList operations
         Task<UserList?> GetByIdAsync(int listId);
 
-        Task<IEnumerable<UserList>> GetByUserIdAsync(int userId);
+        Task<IEnumerable<UserListResponseDto>> GetSummariesByUserIdAsync(int userId, int previewCount);
 
         Task<bool> ExistsAsync(int listId);
 
