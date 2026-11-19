@@ -93,9 +93,13 @@ namespace GameDBWebApi.Services
                 pageSize,
                 !string.IsNullOrWhiteSpace(keyword));
             var offset = (page - 1) * pageSize;
-            var where = string.IsNullOrWhiteSpace(keyword)
-                ? string.Empty
-                : $" where name ~ *\"{EscapeQueryValue(keyword)}\"*;";
+            var filters = new List<string> { "version_parent = null" };
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                filters.Insert(0, $"name ~ *\"{EscapeQueryValue(keyword)}\"*");
+            }
+
+            var where = $" where {string.Join(" & ", filters)};";
 
             if (ordering == GameFeedOrdering.Popular)
             {
