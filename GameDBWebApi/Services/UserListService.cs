@@ -95,17 +95,9 @@ namespace GameDBWebApi.Services
             if (user is null)
                 throw new NotFoundException(ErrorMessages.User.UserNotFound);
 
-            var userLists = await _unitOfWork.UserLists.GetByUserIdAsync(userId);
+            var userLists = await _unitOfWork.UserLists.GetSummariesByUserIdAsync(userId, previewCount: 5);
 
-            // TODO: Consider storing GameCount on UserList if list queries become a performance bottleneck.
-            //maybe paginated results in the future if a user has a lot of lists, but for now this should be fine.
-            return userLists.Select(list => new UserListResponseDto
-            {
-                Id = list.Id,
-                ListTitle = list.ListTitle,
-                UserId = list.UserId,
-                GameCount = list.ListedGames.Count
-            });
+            return userLists;
         }
         public async Task AddGameAsync(
             int userId,
