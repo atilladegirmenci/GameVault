@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace GameDBWebApi.Entites
 {
     /// <summary>
-    /// Represents a custom list created by a user (for example: favorites, wish list, custom collections).
+    /// Represents a custom or status-based list owned by a user.
     /// Each list belongs to a single user and contains many games via the junction UserListGame.
     /// </summary>
     public class UserList
@@ -23,6 +23,9 @@ namespace GameDBWebApi.Entites
         /// Id of the user who owns this list.
         /// </summary>
         public int UserId { get; set; }
+
+        /// <summary>Identifies custom lists and system-managed status lists.</summary>
+        public UserListType Type { get; set; }
 
         /// <summary>
         /// Navigation to the owner user.

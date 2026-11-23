@@ -177,6 +177,7 @@ namespace GameDBWebApi.Services
 
             verificationToken.UsedAtUtc = DateTime.UtcNow;
             verificationToken.User.EmailConfirmed = true;
+            await _unitOfWork.UserLists.EnsureDefaultListsAsync(verificationToken.UserId);
             await _unitOfWork.CompleteAsync();
         }
 

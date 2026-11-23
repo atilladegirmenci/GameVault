@@ -164,6 +164,14 @@ namespace GameDBWebApi.Data
                       .IsRequired()
                       .HasMaxLength(100);
 
+                entity.Property(ul => ul.Type)
+                      .IsRequired()
+                      .HasDefaultValue(UserListType.Custom);
+
+                entity.HasIndex(ul => new { ul.UserId, ul.Type })
+                      .IsUnique()
+                      .HasFilter("[Type] <> 0");
+
                 entity.Property(ul => ul.CreatedAt)
                       .IsRequired();
 
