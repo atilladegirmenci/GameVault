@@ -250,6 +250,9 @@ namespace GameDBWebApi.Migrations
                     b.Property<DateTime>("AddedDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("Position")
+                        .HasColumnType("int");
+
                     b.HasKey("UserListId", "GameId");
 
                     b.HasIndex("GameId");
