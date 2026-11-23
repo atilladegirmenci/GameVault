@@ -68,6 +68,7 @@ namespace GameDBWebApi.Services
                 await _unitOfWork.UserGames.UpdateAsync(userGame);
             }
 
+            await _unitOfWork.UserLists.SyncGameStatusListAsync(userId, game.Id, request.Status);
             await _unitOfWork.CompleteAsync();
         }
 
@@ -91,6 +92,7 @@ namespace GameDBWebApi.Services
             }
 
             await _unitOfWork.UserGames.DeleteAsync(userGame);
+            await _unitOfWork.UserLists.RemoveGameFromStatusListsAsync(userId, game.Id);
             await _unitOfWork.CompleteAsync();
 
             _logger.LogInformation(

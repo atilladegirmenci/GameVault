@@ -226,6 +226,11 @@ namespace GameDBWebApi.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int>("Type")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -234,7 +239,9 @@ namespace GameDBWebApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "Type")
+                        .IsUnique()
+                        .HasFilter("[Type] <> 0");
 
                     b.ToTable("UserLists", (string)null);
                 });

@@ -25,6 +25,7 @@ namespace GameDBWebApi.Services
             {
                 UserId = userId,
                 ListTitle = request.ListTitle.Trim(),
+                Type = UserListType.Custom,
             };
 
             await _unitOfWork.UserLists.AddAsync(userList);
@@ -35,6 +36,7 @@ namespace GameDBWebApi.Services
                 Id = userList.Id,
                 ListTitle = userList.ListTitle,
                 UserId = userList.UserId,
+                Type = userList.Type,
                 GameCount = 0
             };
         }
@@ -42,6 +44,8 @@ namespace GameDBWebApi.Services
         public async Task DeleteListAsync(int userId, int listId)
         {
             var userList = await GetOwnedListAsync(userId, listId);
+
+            EnsureCustomList(userList);
 
             _unitOfWork.UserLists.Delete(userList);
             await _unitOfWork.CompleteAsync();
@@ -55,6 +59,8 @@ namespace GameDBWebApi.Services
 
             var userList = await GetOwnedListAsync(userId, listId);
 
+            EnsureCustomList(userList);
+
             userList.ListTitle = request.ListTitle.Trim();
 
             _unitOfWork.UserLists.Update(userList);
@@ -65,6 +71,7 @@ namespace GameDBWebApi.Services
                 Id = userList.Id,
                 ListTitle = userList.ListTitle,
                 UserId = userList.UserId,
+                Type = userList.Type,
                 GameCount = userList.ListedGames?.Count ?? 0
             };
         }
@@ -109,6 +116,7 @@ namespace GameDBWebApi.Services
                 throw new BadRequestException(ErrorMessages.Game.CatalogGameIdMustBePositive);
 
             var userList = await GetOwnedListAsync(userId, listId);
+            EnsureCustomList(userList);
 
             var alreadyExists = await _unitOfWork.UserLists
                 .ContainsGameByCatalogIdAsync(listId, catalogId);
@@ -119,7 +127,7 @@ namespace GameDBWebApi.Services
             var gameCount = await _unitOfWork.UserLists
                 .GetGameCountByListIdAsync(listId);
 
-            if (gameCount >= MaxGamesPerList)
+            if (userList.Type == UserListType.Custom && gameCount >= MaxGamesPerList)
                 throw new BadRequestException(
                     string.Format(ErrorMessages.UserList.ListMaxGamesTemplate, MaxGamesPerList));
 
@@ -153,6 +161,8 @@ namespace GameDBWebApi.Services
         public async Task RemoveGameAsync(int userId, int listId, int gameId)
         {
             var userList = await GetOwnedListAsync(userId, listId);
+
+            EnsureCustomList(userList);
 
             var gameExists = await _unitOfWork.UserLists
                 .ContainsGameAsync(listId, gameId);
@@ -197,6 +207,12 @@ namespace GameDBWebApi.Services
                 throw new ForbiddenException(ErrorMessages.UserList.NoPermissionForList);
 
             return userList;
+        }
+
+        private static void EnsureCustomList(UserList userList)
+        {
+            if (userList.Type != UserListType.Custom)
+                throw new BadRequestException(ErrorMessages.UserList.DefaultListIsManagedByGameStatus);
         }
     }
 }
