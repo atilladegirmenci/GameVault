@@ -20,7 +20,7 @@ namespace GameDBWebApi.Services
             int listId);
 
         // Games within a user list
-        Task<IEnumerable<UserListGameResponseDto>> GetListGamesAsync(int listId);
+        Task<IEnumerable<UserListGameResponseDto>> GetListGamesAsync(int listId); //TODO: Consider returning DTOs instead of entities for better abstraction
 
         Task AddGameAsync(
             int userId,
@@ -32,5 +32,7 @@ namespace GameDBWebApi.Services
             int userId,
             int listId,
             int gameId);
+
+        Task ReorderGamesAsync(int userId, int listId, IReadOnlyList<int> orderedGameIds);
     }
 }

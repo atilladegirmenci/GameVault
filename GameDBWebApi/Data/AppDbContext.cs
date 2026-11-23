@@ -182,6 +182,9 @@ namespace GameDBWebApi.Data
             {
                 entity.ToTable("UserListGames");
 
+                entity.Property(ulg => ulg.Position)
+                      .IsRequired();
+
                 // COMPOSITE PRIMARY KEY: A game can only be added ONCE to a specific list
                 entity.HasKey(ulg => new { ulg.UserListId, ulg.GameId });
 

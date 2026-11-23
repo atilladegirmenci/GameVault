@@ -167,6 +167,25 @@ namespace GameDBWebApi.Services
             await _unitOfWork.CompleteAsync();
         }
 
+        public async Task ReorderGamesAsync(int userId, int listId, IReadOnlyList<int> orderedGameIds)
+        {
+            var userList = await GetOwnedListAsync(userId, listId);
+            var currentEntries = await _unitOfWork.UserLists.GetGamesByListIdAsync(listId);
+            var currentGameIds = currentEntries.Select(entry => entry.GameId).ToHashSet();
+
+            if (orderedGameIds is null ||
+                orderedGameIds.Count != currentGameIds.Count ||
+                orderedGameIds.Distinct().Count() != orderedGameIds.Count ||
+                !orderedGameIds.ToHashSet().SetEquals(currentGameIds))
+            {
+                throw new BadRequestException("The ordered game IDs must contain every game in the list exactly once.");
+            }
+
+            await _unitOfWork.UserLists.ReorderGamesAsync(listId, orderedGameIds);
+            _unitOfWork.UserLists.Update(userList);
+            await _unitOfWork.CompleteAsync();
+        }
+
         private async Task<UserList> GetOwnedListAsync(int userId, int listId)
         {
             var userList = await _unitOfWork.UserLists.GetByIdAsync(listId);

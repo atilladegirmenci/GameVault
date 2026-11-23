@@ -30,5 +30,8 @@ namespace GameDBWebApi.Entites
         /// UTC time when the game was added to the list.
         /// </summary>
         public DateTime AddedDate { get; set; }
+
+        /// <summary>Zero-based position of the game within its list.</summary>
+        public int Position { get; set; }
     }
 }

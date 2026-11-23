@@ -74,7 +74,10 @@ namespace GameDBWebApi.Repositories
             {
                 UserListId = listId,
                 GameId = gameId,
-                AddedDate = DateTime.UtcNow
+                AddedDate = DateTime.UtcNow,
+                Position = (await _context.UserListGames
+                    .Where(ulg => ulg.UserListId == listId)
+                    .MaxAsync(ulg => (int?)ulg.Position) ?? -1) + 1
             };
 
             await _context.UserListGames.AddAsync(userListGame);
@@ -100,7 +103,7 @@ namespace GameDBWebApi.Repositories
         {
             return await _context.UserListGames
                 .Where(ulg => ulg.UserListId == listId)
-                .OrderByDescending(ulg => ulg.AddedDate)
+                .OrderBy(ulg => ulg.Position)
                 .ThenBy(ulg => ulg.GameId)
                 .Include(ulg => ulg.Game)
                 .ToListAsync();
@@ -124,6 +127,19 @@ namespace GameDBWebApi.Repositories
         {
             return await _context.UserListGames
                 .CountAsync(ulg => ulg.UserListId == listId);
+        }
+
+        public async Task ReorderGamesAsync(int listId, IReadOnlyList<int> orderedGameIds)
+        {
+            var entries = await _context.UserListGames
+                .Where(ulg => ulg.UserListId == listId)
+                .ToListAsync();
+            var positions = orderedGameIds
+                .Select((gameId, position) => new { gameId, position })
+                .ToDictionary(item => item.gameId, item => item.position);
+
+            foreach (var entry in entries)
+                entry.Position = positions[entry.GameId];
         }
     }
 }
