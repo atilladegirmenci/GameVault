@@ -164,6 +164,14 @@ namespace GameDBWebApi.Data
                       .IsRequired()
                       .HasMaxLength(100);
 
+                entity.Property(ul => ul.Type)
+                      .IsRequired()
+                      .HasDefaultValue(UserListType.Custom);
+
+                entity.HasIndex(ul => new { ul.UserId, ul.Type })
+                      .IsUnique()
+                      .HasFilter("[Type] <> 0");
+
                 entity.Property(ul => ul.CreatedAt)
                       .IsRequired();
 
@@ -181,6 +189,9 @@ namespace GameDBWebApi.Data
             modelBuilder.Entity<UserListGame>(entity =>
             {
                 entity.ToTable("UserListGames");
+
+                entity.Property(ulg => ulg.Position)
+                      .IsRequired();
 
                 // COMPOSITE PRIMARY KEY: A game can only be added ONCE to a specific list
                 entity.HasKey(ulg => new { ulg.UserListId, ulg.GameId });

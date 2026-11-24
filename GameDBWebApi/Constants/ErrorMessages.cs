@@ -63,6 +63,7 @@ namespace GameDBWebApi.Constants
             public const string GameAlreadyInList = "This game is already in the list.";
             public const string ListMaxGamesTemplate = "Limit has reached the maximum number of games.";
             public const string GameNotFoundInList = "Game not found in this list.";
+            public const string DefaultListIsManagedByGameStatus = "Default status lists are managed by game status and cannot be changed directly.";
         }
 
         public static class External

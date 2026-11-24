@@ -34,12 +34,15 @@ namespace GameDBWebApi.Repositories
             return await _context.UserLists
                 .AsNoTracking()
                 .Where(ul => ul.UserId == userId)
-                .OrderBy(ul => ul.Id)
+                .OrderBy(ul => ul.Type == UserListType.Custom ? 1 : 0)
+                .ThenBy(ul => ul.Type)
+                .ThenBy(ul => ul.Id)
                 .Select(ul => new UserListResponseDto
                 {
                     Id = ul.Id,
                     ListTitle = ul.ListTitle,
                     UserId = ul.UserId,
+                    Type = ul.Type,
                     GameCount = ul.ListedGames.Count,
                     PreviewImageUrls = ul.ListedGames
                         .Where(ulg => ulg.Game.ImageUrl != null)
@@ -74,7 +77,10 @@ namespace GameDBWebApi.Repositories
             {
                 UserListId = listId,
                 GameId = gameId,
-                AddedDate = DateTime.UtcNow
+                AddedDate = DateTime.UtcNow,
+                Position = (await _context.UserListGames
+                    .Where(ulg => ulg.UserListId == listId)
+                    .MaxAsync(ulg => (int?)ulg.Position) ?? -1) + 1
             };
 
             await _context.UserListGames.AddAsync(userListGame);
@@ -100,7 +106,7 @@ namespace GameDBWebApi.Repositories
         {
             return await _context.UserListGames
                 .Where(ulg => ulg.UserListId == listId)
-                .OrderByDescending(ulg => ulg.AddedDate)
+                .OrderBy(ulg => ulg.Position)
                 .ThenBy(ulg => ulg.GameId)
                 .Include(ulg => ulg.Game)
                 .ToListAsync();
@@ -125,5 +131,108 @@ namespace GameDBWebApi.Repositories
             return await _context.UserListGames
                 .CountAsync(ulg => ulg.UserListId == listId);
         }
+
+        public async Task ReorderGamesAsync(int listId, IReadOnlyList<int> orderedGameIds)
+        {
+            var entries = await _context.UserListGames
+                .Where(ulg => ulg.UserListId == listId)
+                .ToListAsync();
+            var positions = orderedGameIds
+                .Select((gameId, position) => new { gameId, position })
+                .ToDictionary(item => item.gameId, item => item.position);
+
+            foreach (var entry in entries)
+                entry.Position = positions[entry.GameId];
+        }
+
+        public async Task EnsureDefaultListsAsync(int userId)
+        {
+            var existingTypes = await _context.UserLists
+                .Where(list => list.UserId == userId && list.Type != UserListType.Custom)
+                .Select(list => list.Type)
+                .ToListAsync();
+            var existing = existingTypes.ToHashSet();
+            var now = DateTime.UtcNow;
+
+            foreach (var (type, title) in DefaultListTitles)
+            {
+                if (!existing.Contains(type))
+                {
+                    await _context.UserLists.AddAsync(new UserList
+                    {
+                        UserId = userId,
+                        Type = type,
+                        ListTitle = title,
+                        CreatedAt = now
+                    });
+                }
+            }
+        }
+
+        public async Task SyncGameStatusListAsync(int userId, int gameId, GameStatus status)
+        {
+            await EnsureDefaultListsAsync(userId);
+
+            var targetType = status switch
+            {
+                GameStatus.PlansToPlay => UserListType.PlansToPlay,
+                GameStatus.Playing => UserListType.CurrentlyPlaying,
+                GameStatus.Finished => UserListType.Finished,
+                _ => throw new ArgumentOutOfRangeException(nameof(status), status, "Unknown game status.")
+            };
+
+            var defaultLists = await _context.UserLists
+                .Where(list => list.UserId == userId && list.Type != UserListType.Custom)
+                .ToListAsync();
+            var trackedDefaults = _context.UserLists.Local
+                .Where(list => list.UserId == userId && list.Type != UserListType.Custom)
+                .Where(list => defaultLists.All(existing => existing.Id != list.Id));
+            defaultLists.AddRange(trackedDefaults);
+            var targetList = defaultLists.Single(list => list.Type == targetType);
+            var defaultListIds = defaultLists.Select(list => list.Id).ToArray();
+            var memberships = await _context.UserListGames
+                .Where(entry => entry.GameId == gameId &&
+                                defaultListIds.Contains(entry.UserListId))
+                .ToListAsync();
+            var targetMembership = memberships.FirstOrDefault(entry => entry.UserListId == targetList.Id);
+
+            _context.UserListGames.RemoveRange(memberships.Where(entry => entry.UserListId != targetList.Id));
+
+            if (targetMembership is null)
+            {
+                var lastPosition = await _context.UserListGames
+                    .Where(entry => entry.UserListId == targetList.Id)
+                    .MaxAsync(entry => (int?)entry.Position) ?? -1;
+                var membership = new UserListGame
+                {
+                    GameId = gameId,
+                    AddedDate = DateTime.UtcNow,
+                    Position = lastPosition + 1
+                };
+                if (_context.Entry(targetList).State == EntityState.Added)
+                    membership.UserList = targetList;
+                else
+                    membership.UserListId = targetList.Id;
+                await _context.UserListGames.AddAsync(membership);
+            }
+        }
+
+        public async Task RemoveGameFromStatusListsAsync(int userId, int gameId)
+        {
+            var defaultListIds = _context.UserLists
+                .Where(list => list.UserId == userId && list.Type != UserListType.Custom)
+                .Select(list => list.Id);
+            var memberships = await _context.UserListGames
+                .Where(entry => entry.GameId == gameId && defaultListIds.Contains(entry.UserListId))
+                .ToListAsync();
+            _context.UserListGames.RemoveRange(memberships);
+        }
+
+        private static readonly (UserListType Type, string Title)[] DefaultListTitles =
+        [
+            (UserListType.PlansToPlay, "Plans to Play"),
+            (UserListType.CurrentlyPlaying, "Currently Playing"),
+            (UserListType.Finished, "Finished")
+        ];
     }
 }

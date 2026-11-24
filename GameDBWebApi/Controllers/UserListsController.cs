@@ -100,6 +100,17 @@ namespace GameDBWebApi.Controllers
             return NoContent();
         }
 
+        [HttpPut("{listId:int}/games/order")]
+        [Authorize]
+        public async Task<IActionResult> ReorderGames(int listId, [FromBody] ReorderUserListGamesRequestDto request)
+        {
+            if (!TryGetUserId(out var userId))
+                return Unauthorized();
+
+            await _userListService.ReorderGamesAsync(userId, listId, request.GameIds);
+            return NoContent();
+        }
+
         private bool TryGetUserId(out int userId)
         {
             return int.TryParse(

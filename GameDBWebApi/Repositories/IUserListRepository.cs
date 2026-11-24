@@ -25,5 +25,9 @@ namespace GameDBWebApi.Repositories
         Task<bool> ContainsGameByCatalogIdAsync(int listId, int catalogId);
         Task<bool> ContainsGameAsync(int listId, int gameId);
         Task<int> GetGameCountByListIdAsync(int listId);
+        Task ReorderGamesAsync(int listId, IReadOnlyList<int> orderedGameIds);
+        Task EnsureDefaultListsAsync(int userId);
+        Task SyncGameStatusListAsync(int userId, int gameId, GameStatus status);
+        Task RemoveGameFromStatusListsAsync(int userId, int gameId);
     }
 }

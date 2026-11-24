@@ -8,6 +8,8 @@ namespace GameDBWebApi.DTOs.List
 
         public int UserId { get; set; }
 
+        public GameDBWebApi.Entites.UserListType Type { get; set; }
+
         public int GameCount { get; set; }
 
         public List<string> PreviewImageUrls { get; set; } = new();
